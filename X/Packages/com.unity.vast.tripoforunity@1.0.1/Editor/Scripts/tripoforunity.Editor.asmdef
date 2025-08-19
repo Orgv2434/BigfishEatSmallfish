@@ -1,0 +1,29 @@
+{
+    "name": "tripoforunity.Editor",
+    "rootNamespace": "TripoForUnity.Editor",
+    "references": [
+        "System",
+        "System.Collections",
+        "System.Collections.Generic",
+        "System.IO",
+        "System.Linq",
+        "UnityEditor",
+        "UnityEngine",
+        "UnityEngine.Events",
+        "UnityEngine.Networking",
+        "TripoForUnity.Runtime"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [
+        
+    ],
+    "noEngineReferences": false
+}
