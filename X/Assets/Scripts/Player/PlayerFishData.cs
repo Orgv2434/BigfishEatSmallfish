@@ -1,8 +1,9 @@
 using UnityEngine;
 using System;
 using System.Collections;
+using Unity.Netcode;
 
-public class PlayerFishData : MonoBehaviour
+public class PlayerFishData : NetworkBehaviour
 {
     // 鱼的技能数据（在Inspector拖拽配置）
     public SkillFishData fishData;

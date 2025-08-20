@@ -4,5 +4,8 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/Distant Lands/Thalassophobia - Low Poly Oceans/Scenes/Coral Reef.unity
+    guid: 94757fd23e84f8c478af58f353a5b3c1
   m_configObjects: {}

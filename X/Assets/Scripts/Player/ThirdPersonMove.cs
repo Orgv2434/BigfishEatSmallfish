@@ -1,7 +1,8 @@
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class ThirdPersonMove : MonoBehaviour
+public class ThirdPersonMove : NetworkBehaviour
 {
     [Header("控制设置")]
     public double rotateSpeed = 90.0;         // 旋转速度（度/秒，绕 Y 轴）
@@ -54,9 +55,12 @@ public class ThirdPersonMove : MonoBehaviour
     }
 
     void Update()
-    {
+    {   
         if (_controller == null) return; // 组件缺失时直接退出Update，避免无效计算
-
+        if (!IsOwner)
+        {
+            return;
+        }
         HandleCooldown();       // 处理冲刺冷却
         HandleRotation();       // 处理角色旋转（A/D）
         Vector3 moveDir = CalculateMoveDirection(); // 计算移动方向
