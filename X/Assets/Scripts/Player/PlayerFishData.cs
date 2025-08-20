@@ -1,12 +1,18 @@
 using UnityEngine;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using Unity.Netcode;
 
 public class PlayerFishData : NetworkBehaviour
 {
-    // 鱼的技能数据（在Inspector拖拽配置）
     public SkillFishData fishData;
+
+    // 永久技能（生成时随机1个+吃冲刺鱼获得，可重复使用）
+    public HashSet<FishSkillType> permanentSkills = new HashSet<FishSkillType>();
+    // 一次性技能（吃技能鱼获得，仅1次使用机会，超时失效）
+    public List<FishSkillType> oneTimeSkills = new List<FishSkillType>();
+
     [Header("基础属性")]
     public float maxHealth = 100f;
     public float currentHealth;
@@ -17,16 +23,15 @@ public class PlayerFishData : NetworkBehaviour
     public float moveSpeed = 5f;
 
     [Header("生命设置")]
-    public float healthLossRate = 1f; // 每秒扣血量
-    [Tooltip("经验转血量的倍率（每点经验回复的血量）")]
-    public float expToHealthRate = 0.2f; // 新增：经验回血倍率
+    public float healthLossRate = 1f;
+    public float expToHealthRate = 0.2f;
 
     [Header("经验设置")]
-    public float baseExpMultiplier = 0.5f; // 基础经验倍率
+    public float baseExpMultiplier = 0.5f;
     private float _currentExpMultiplier;
 
     [Header("升级设置")]
-    public int[] expToNextTier = { 100, 300, 600, 1000 }; // 各挡位升级所需经验
+    public int[] expToNextTier = { 100, 300, 600, 1000 };
 
     [Header("体型设置")]
     public float sizeIncreasePerTier = 0.5f;
@@ -37,40 +42,93 @@ public class PlayerFishData : NetworkBehaviour
     public Action<FishTier> OnTierChanged;
     public Action<float> OnSizeChanged;
     public Action<float> OnSpeedChanged;
+    public Action<HashSet<FishSkillType>> OnPermanentSkillsUpdated;
+    public Action<List<FishSkillType>> OnOneTimeSkillsUpdated;
 
-    // 护盾状态
     public int _shieldCount = 0;
     FishSkillSystem skillSystem;
+
     private void Start()
     {
         currentHealth = maxHealth;
         currentSize = baseSize;
         _currentExpMultiplier = baseExpMultiplier;
         skillSystem = GetComponent<FishSkillSystem>();
+
+        // 生成时随机获得1个永久技能
+        if (IsServer)
+        {
+            GrantRandomPermanentSkill();
+        }
+    }
+
+    // 初始随机永久技能（不含冲刺）
+    private void GrantRandomPermanentSkill()
+    {
+        FishSkillType[] permanentSkillPool = new FishSkillType[]
+        {
+            FishSkillType.Shield,
+            FishSkillType.Camouflage,
+            FishSkillType.ExpMultiplier
+        };
+
+        System.Random random = new System.Random();
+        FishSkillType selectedSkill = permanentSkillPool[random.Next(permanentSkillPool.Length)];
+
+        permanentSkills.Add(selectedSkill);
+        OnPermanentSkillsUpdated?.Invoke(permanentSkills);
+        Debug.Log($"初始获得永久技能：{selectedSkill}（按1键使用）");
+    }
+
+    // 添加一次性技能（并触发超时检查）
+    public void AddOneTimeSkill(FishSkillType skill, float expireTime = 30f)
+    {
+        oneTimeSkills.Add(skill);
+        OnOneTimeSkillsUpdated?.Invoke(oneTimeSkills);
+        Debug.Log($"获得一次性技能：{skill}（按Q键使用，{expireTime}秒内有效）");
+
+        // 启动超时协程（超时未使用则移除）
+        StartCoroutine(RemoveOneTimeSkillAfterDelay(skill, expireTime));
+    }
+
+    // 移除一次性技能（使用后或超时）
+    public void RemoveOneTimeSkill(FishSkillType skill)
+    {
+        if (oneTimeSkills.Contains(skill))
+        {
+            oneTimeSkills.Remove(skill);
+            OnOneTimeSkillsUpdated?.Invoke(oneTimeSkills);
+        }
+    }
+
+    // 一次性技能超时移除（添加失效日志）
+    private IEnumerator RemoveOneTimeSkillAfterDelay(FishSkillType skill, float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        if (oneTimeSkills.Contains(skill))
+        {
+            RemoveOneTimeSkill(skill);
+            Debug.Log($"一次性技能【{skill}】已超时失效！"); // 超时失效日志
+        }
     }
 
     private void Update()
     {
-        // 随时间扣血
         currentHealth = Mathf.Max(0, currentHealth - healthLossRate * Time.deltaTime);
         OnHealthChanged?.Invoke(currentHealth / maxHealth);
 
-        // 死亡检测
         if (currentHealth <= 0)
         {
             Debug.Log("玩家鱼死亡！");
-            // 可扩展死亡逻辑，比如触发游戏结束事件等
         }
     }
 
-    // 加血
     public void GainHealth(float amount)
     {
         currentHealth = Mathf.Min(maxHealth, currentHealth + amount);
         OnHealthChanged?.Invoke(currentHealth / maxHealth);
     }
 
-    // 加经验（新增：同时计算回血）
     public void GainExp(int baseExp)
     {
         int actualExp = Mathf.RoundToInt(baseExp * _currentExpMultiplier);
@@ -78,13 +136,11 @@ public class PlayerFishData : NetworkBehaviour
         OnExpChanged?.Invoke(currentExp, GetRequiredExpForNextTier());
         CheckTierUpgrade();
 
-        // 新增：根据获得的实际经验值回复血量
         float healthRecover = actualExp * expToHealthRate;
         GainHealth(healthRecover);
         Debug.Log($"获得经验：{actualExp}，回复血量：{healthRecover}");
     }
 
-    // 检查升级
     private void CheckTierUpgrade()
     {
         int tierIndex = (int)currentTier;
@@ -93,13 +149,11 @@ public class PlayerFishData : NetworkBehaviour
             tierIndex++;
             currentTier = (FishTier)tierIndex;
 
-            // 升级属性提升
             currentSize = baseSize + (int)currentTier * sizeIncreasePerTier;
             moveSpeed += 0.5f;
             maxHealth += 50;
             currentHealth = Mathf.Min(maxHealth, currentHealth + 50);
 
-            // 触发事件
             OnSizeChanged?.Invoke(currentSize);
             OnSpeedChanged?.Invoke(moveSpeed);
             OnTierChanged?.Invoke(currentTier);
@@ -107,7 +161,6 @@ public class PlayerFishData : NetworkBehaviour
         }
     }
 
-    // 临时经验倍率
     public void SetTemporaryExpMultiplier(float multiplier, float duration)
     {
         StartCoroutine(ResetExpMultiplier(multiplier, duration));
@@ -118,9 +171,9 @@ public class PlayerFishData : NetworkBehaviour
         _currentExpMultiplier = tempMulti;
         yield return new WaitForSeconds(duration);
         _currentExpMultiplier = baseExpMultiplier;
+        Debug.Log("经验倍率效果已结束！"); // 经验倍率失效日志
     }
 
-    // 临时外观挡位（伪装技能用）
     public void SetTemporaryVisualTier(FishTier visualTier, float duration)
     {
         StartCoroutine(ResetVisualTier(visualTier, duration));
@@ -129,9 +182,9 @@ public class PlayerFishData : NetworkBehaviour
     private IEnumerator ResetVisualTier(FishTier visualTier, float duration)
     {
         yield return new WaitForSeconds(duration);
+        // 此处由伪装技能的协程单独处理失效日志
     }
 
-    // 护盾管理
     public void AddShield(int count = 1)
     {
         _shieldCount += count;
@@ -147,14 +200,12 @@ public class PlayerFishData : NetworkBehaviour
         return false;
     }
 
-    // 获取下一等级所需经验
     public int GetRequiredExpForNextTier()
     {
         int tierIndex = (int)currentTier;
         return tierIndex < expToNextTier.Length ? expToNextTier[tierIndex] : 0;
     }
 
-    // 处理与其他鱼的碰撞逻辑
     public void HandleFishCollision(FishTierEffect otherFish)
     {
         FishTier otherFishTier = otherFish.fishData.fishTier;
@@ -162,10 +213,8 @@ public class PlayerFishData : NetworkBehaviour
         string otherFishTag = otherFish.gameObject.tag;
         if (otherFishTier > currentTier)
         {
-            // 碰到比自己挡位大的鱼
             if (!UseShield())
             {
-                // 没有护盾，死亡
                 currentHealth = 0;
                 Debug.Log("玩家鱼被更大挡位的鱼吃掉，死亡！");
                 Destroy(gameObject);
@@ -177,14 +226,12 @@ public class PlayerFishData : NetworkBehaviour
         }
         else if (otherFishTier < currentTier)
         {
-
             Debug.Log("玩家鱼吃掉更小挡位的鱼，获得经验！");
             Destroy(otherFish.gameObject);
             skillSystem.EatSkillFish(otherFish.fishData);
         }
         else
         {
-            // 同挡位的鱼，检测tag
             if (otherFishTag == "tail")
             {
                 Debug.Log("玩家鱼吃掉同挡位鱼的尾部，获得经验！");
@@ -193,7 +240,6 @@ public class PlayerFishData : NetworkBehaviour
             }
             else if (otherFishTag == "head")
             {
-                // 是head，无视
                 Debug.Log("玩家鱼碰到同挡位鱼的头部，无视该碰撞！");
             }
             else
@@ -204,5 +250,4 @@ public class PlayerFishData : NetworkBehaviour
             }
         }
     }
-
 }

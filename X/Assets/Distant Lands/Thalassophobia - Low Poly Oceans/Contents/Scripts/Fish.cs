@@ -1,9 +1,10 @@
 ﻿using UnityEngine;
 using System.Collections;
+using Unity.Netcode;
 
 namespace DistantLands
 {
-    public class Fish : MonoBehaviour
+    public class Fish : NetworkBehaviour
     {
         private float speed;
         public float averageSpeed = 1.0f;
@@ -15,15 +16,70 @@ namespace DistantLands
 
         bool turning = false;
 
+        // 网络同步变量 - 服务器写入，客户端读取
+        private NetworkVariable<Vector3> networkPosition = new NetworkVariable<Vector3>(
+            writePerm: NetworkVariableWritePermission.Server
+        );
+        private NetworkVariable<Quaternion> networkRotation = new NetworkVariable<Quaternion>(
+            writePerm: NetworkVariableWritePermission.Server
+        );
+        private NetworkVariable<float> networkSpeed = new NetworkVariable<float>(
+            writePerm: NetworkVariableWritePermission.Server
+        );
+
         void Start()
         {
             speed = Random.Range(0.5f, 1.5f) * averageSpeed;
+
+            // 客户端初始化网络变量回调
+            if (!IsServer)
+            {
+                networkPosition.OnValueChanged += OnPositionChanged;
+                networkRotation.OnValueChanged += OnRotationChanged;
+                networkSpeed.OnValueChanged += OnSpeedChanged;
+            }
+        }
+
+        // 网络变量变更回调
+        private void OnPositionChanged(Vector3 oldVal, Vector3 newVal)
+        {
+            transform.position = newVal;
+        }
+
+        private void OnRotationChanged(Quaternion oldVal, Quaternion newVal)
+        {
+            transform.rotation = newVal;
+        }
+
+        private void OnSpeedChanged(float oldVal, float newVal)
+        {
+            speed = newVal;
         }
 
         void Update()
         {
             if (flock == null) return;
 
+            // 只有服务器计算运动逻辑
+            if (IsServer)
+            {
+                CalculateMovement();
+
+                // 更新网络变量同步到客户端
+                networkPosition.Value = transform.position;
+                networkRotation.Value = transform.rotation;
+                networkSpeed.Value = speed;
+            }
+            // 客户端只执行基础移动以保持流畅
+            else
+            {
+                transform.Translate(0, 0, Time.deltaTime * speed);
+            }
+        }
+
+        // 将原Update中的运动计算逻辑提取为独立方法，仅服务器执行
+        private void CalculateMovement()
+        {
             ApplyTankBoundary();
 
             if (turning)
@@ -122,8 +178,7 @@ namespace DistantLands
             return Random.Range(0.2f, 0.4f) * speed;
         }
 
-        // 新增：鱼被销毁时从鱼群列表移除自身
-        void OnDestroy()
+        new void OnDestroy()
         {
             if (flock != null && flock.allFish != null)
             {

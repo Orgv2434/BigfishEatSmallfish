@@ -27,5 +27,6 @@ public class TestingNetcodeUI : MonoBehaviour
     private void Hide()
     {
         gameObject.SetActive(false);
+
     }
 }

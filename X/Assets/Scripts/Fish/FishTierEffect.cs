@@ -42,8 +42,6 @@ public class FishTierEffect : MonoBehaviour
             string fullPath = $"{EffectPath}{effectNames[i]}";
             GameObject prefab = Resources.Load<GameObject>(fullPath);
 
-            // 强制打印路径，看实际加载的地址
-            Debug.Log($"尝试加载：{fullPath} → 是否找到？ {prefab != null}");
 
             if (prefab == null)
             {

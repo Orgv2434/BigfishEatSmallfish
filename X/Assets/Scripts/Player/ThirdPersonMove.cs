@@ -52,10 +52,11 @@ public class ThirdPersonMove : NetworkBehaviour
         {
             Debug.LogError("缺少 CharacterController 组件！请添加后运行。");
         }
+
     }
 
     void Update()
-    {   
+    {
         if (_controller == null) return; // 组件缺失时直接退出Update，避免无效计算
         if (!IsOwner)
         {
@@ -180,9 +181,9 @@ public class ThirdPersonMove : NetworkBehaviour
     /// <summary>
     /// 处理鼠标左键冲刺输入
     /// </summary>
-    private void HandleSprintInput()
+    public void HandleSprintInput()
     {
-        if (_isLeftMousePressed && !_isOnCooldown && !_isSprinting&&haveDush)
+        if (_isLeftMousePressed && !_isOnCooldown && !_isSprinting && haveDush)
         {
             _isSprinting = true;
             _sprintTimer = 0;

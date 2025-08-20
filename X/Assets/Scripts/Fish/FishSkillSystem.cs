@@ -3,18 +3,32 @@ using System;
 using System.Collections.Generic;
 using System.Collections;
 
-
-
 public class FishSkillSystem : MonoBehaviour
 {
     private PlayerEffect playerEffect;
     private PlayerFishData _playerData;
     private ThirdPersonMove _playerMove;
+
+    // 修改：事件携带使用的技能类型
+    public event Action<FishSkillType> OnOneTimeSkillUsed;
+
+    // 永久技能冷却管理
+    private Dictionary<FishSkillType, float> permanentSkillCooldowns = new Dictionary<FishSkillType, float>();
+    // 永久技能基础冷却时间（可配置）
+    private Dictionary<FishSkillType, float> baseCooldowns = new Dictionary<FishSkillType, float>()
+    {
+        { FishSkillType.Dash, 5f },
+        { FishSkillType.Camouflage, 30f },
+        { FishSkillType.Shield, 20f },
+        { FishSkillType.ExpMultiplier, 60f }
+    };
+
     private void Awake()
     {
         playerEffect = GetComponent<PlayerEffect>();
         _playerData = GetComponent<PlayerFishData>();
         _playerMove = GetComponent<ThirdPersonMove>();
+
         if (_playerData == null)
         {
             Debug.LogError("缺少 PlayerFishData 组件！");
@@ -22,91 +36,200 @@ public class FishSkillSystem : MonoBehaviour
         }
     }
 
-    // 外部调用：玩家吃掉一条技能鱼
-    public void EatSkillFish(SkillFishData fish)
+    private void Start()
     {
-        // 1. 基础逻辑：获得经验
-        _playerData.GainExp(fish.baseExpValue);
+        foreach (var skill in baseCooldowns.Keys)
+        {
+            permanentSkillCooldowns[skill] = 0f;
+        }
 
-        // 2. 触发技能
-        ActivateSkill(fish.skillType);
+        _playerData.OnPermanentSkillsUpdated += OnPermanentSkillsUpdated;
+        _playerData.OnOneTimeSkillsUpdated += OnOneTimeSkillsUpdated;
     }
 
-    // 执行技能效果
-    private void ActivateSkill(FishSkillType skill)
+    private void OnPermanentSkillsUpdated(HashSet<FishSkillType> skills)
+    {
+        Debug.Log("当前永久技能：" + string.Join("、", skills) + "（按1键使用）");
+    }
+
+    private void OnOneTimeSkillsUpdated(List<FishSkillType> skills)
+    {
+        if (skills.Count > 0)
+        {
+            Debug.Log("当前一次性技能：" + string.Join("、", skills) + "（按Q键使用）");
+        }
+    }
+
+    public void EatSkillFish(SkillFishData fish)
+    {
+        _playerData.GainExp(fish.baseExpValue);
+
+        if (fish.skillType == FishSkillType.Dash)
+        {
+            if (!_playerData.permanentSkills.Contains(FishSkillType.Dash))
+            {
+                _playerData.permanentSkills.Add(FishSkillType.Dash);
+                _playerMove.haveDush = true;
+                _playerData.OnPermanentSkillsUpdated?.Invoke(_playerData.permanentSkills);
+                Debug.Log("获得永久技能【冲刺】");
+            }
+            else
+            {
+                ReduceCooldown(FishSkillType.Dash, 2f);
+                Debug.Log("冲刺技能冷却减少2秒！");
+            }
+        }
+        else
+        {
+            _playerData.AddOneTimeSkill(fish.skillType, 30f);
+        }
+    }
+
+    private void UsePermanentSkill()
+    {
+        if (_playerData.permanentSkills.Count == 0) return;
+
+        var skill = new List<FishSkillType>(_playerData.permanentSkills)[0];
+        ActivatePermanentSkill(skill);
+    }
+
+    // 修改：触发事件时传递使用的技能类型
+    private void UseOneTimeSkill()
+    {
+        if (_playerData.oneTimeSkills.Count == 0)
+        {
+            Debug.Log("没有可用的一次性技能！");
+            return;
+        }
+
+        var skill = _playerData.oneTimeSkills[0];
+        ActivateOneTimeSkill(skill);
+        _playerData.RemoveOneTimeSkill(skill);
+        Debug.Log($"一次性技能【{skill}】已消耗！");
+
+        // 传递使用的技能类型
+        OnOneTimeSkillUsed?.Invoke(skill);
+    }
+
+    private void ActivatePermanentSkill(FishSkillType skill)
+    {
+        if (!_playerData.permanentSkills.Contains(skill))
+        {
+            Debug.Log($"未拥有永久技能：{skill}");
+            return;
+        }
+
+        if (permanentSkillCooldowns[skill] > 0)
+        {
+            Debug.Log($"{skill} 冷却中：{permanentSkillCooldowns[skill]:F1}秒");
+            return;
+        }
+
+        switch (skill)
+        {
+            case FishSkillType.ExpMultiplier:
+                _playerData.SetTemporaryExpMultiplier(2f, 20f);
+                Debug.Log("[永久] 经验倍率生效！20秒内×2");
+                permanentSkillCooldowns[skill] = baseCooldowns[skill];
+                break;
+            case FishSkillType.Dash:
+                _playerMove.HandleSprintInput();
+                Debug.Log("[永久] 冲刺！");
+                permanentSkillCooldowns[skill] = baseCooldowns[skill];
+                break;
+            case FishSkillType.Shield:
+                _playerData.AddShield(1);
+                Debug.Log("[永久] 获得1个护盾！");
+                permanentSkillCooldowns[skill] = baseCooldowns[skill];
+                break;
+            case FishSkillType.Camouflage:
+                StartCoroutine(PermanentCamouflage(15f));
+                permanentSkillCooldowns[skill] = baseCooldowns[skill];
+                break;
+        }
+    }
+
+    private void ActivateOneTimeSkill(FishSkillType skill)
     {
         switch (skill)
         {
             case FishSkillType.ExpMultiplier:
-                // 经验倍率鱼：短时间内经验 ×1.5，持续 10 秒
                 _playerData.SetTemporaryExpMultiplier(1.5f, 10f);
-                Debug.Log("经验倍率生效！10 秒内经验获取 ×1.5");
+                Debug.Log("[一次性] 经验倍率生效！10秒内×1.5");
                 break;
-
-            case FishSkillType.Dash:
-                // 冲刺鱼：习得主动技能（这里简化，假设你有输入触发逻辑）
-                Debug.Log("学会冲刺技能！");
-                _playerMove.haveDush = true;
-                break;
-
             case FishSkillType.Shield:
-                // 护盾鱼：自动开护盾，可挡 1 次攻击，10 秒后“可获得次数”失效
-                _playerData.AddShield();
-                StartCoroutine(ExpireShieldEffect(10f));
+                _playerData.AddShield(1);
+                Debug.Log("[一次性] 获得1个护盾！");
                 break;
-
             case FishSkillType.Camouflage:
-                // 伪装鱼：获得主动技能，临时提升外观挡位
-                Debug.Log("学会伪装技能！按 C 键触发（10 秒后失效）");
-                StartCoroutine(EnableCamouflageSkill(10f));
-                break;
-
-            default:
-                Debug.Log("无技能效果");
+                StartCoroutine(OneTimeCamouflage(8f));
                 break;
         }
     }
 
-    // 冲刺技能：5 秒后“可学习状态”失效（需结合输入系统扩展）
-    private IEnumerator DisableDashAfterDelay(float duration)
+    private IEnumerator PermanentCamouflage(float duration)
     {
+        FishTier originalTier = _playerData.currentTier;
+        playerEffect.ChangeHalo(originalTier + 1);
+        Debug.Log("[永久] 伪装生效！15秒内外观提升");
+
         yield return new WaitForSeconds(duration);
-        Debug.Log("冲刺技能时效已过，需重新吞噬冲刺鱼学习");
-        // 可扩展：移除冲刺技能输入绑定
+
+        playerEffect.ChangeHalo(originalTier);
+        Debug.Log("[永久] 伪装效果已结束！");
     }
 
-    // 护盾技能：10 秒后“护盾效果”（次数保留，但新护盾不会自动加）
-    private IEnumerator ExpireShieldEffect(float duration)
+    private IEnumerator OneTimeCamouflage(float duration)
     {
+        FishTier originalTier = _playerData.currentTier;
+        playerEffect.ChangeHalo(originalTier + 1);
+        Debug.Log("[一次性] 伪装生效！8秒内外观提升");
+
         yield return new WaitForSeconds(duration);
-        Debug.Log("护盾时效已过，后续需重新吞噬护盾鱼获得");
-        // 可扩展：关闭“自动获得护盾”状态
+
+        playerEffect.ChangeHalo(originalTier);
+        Debug.Log("[一次性] 伪装效果已结束！");
     }
 
-    // 伪装技能：开启后可主动触发（示例：按 C 键）
-    private IEnumerator EnableCamouflageSkill(float duration)
+    private void ReduceCooldown(FishSkillType skill, float amount)
     {
-        bool skillTriggered = false;
-        float skillTimer = duration;
-
-        // 模拟“主动触发”逻辑（需结合输入系统，如 Input.GetKeyDown(KeyCode.C)）
-        while (skillTimer > 0)
+        if (permanentSkillCooldowns.ContainsKey(skill))
         {
-            if (Input.GetKeyDown(KeyCode.C) && !skillTriggered)
-            {
-                Debug.Log("挡位切换");
-               
-
-                // 临时提升外观挡位（实际挡位不变）
-                playerEffect.ChangeHalo(_playerData.fishData.fishTier + 1);
-
-                skillTriggered = true;
-            }
-            skillTimer -= Time.deltaTime;
-            yield return null;
+            permanentSkillCooldowns[skill] = Mathf.Max(0, permanentSkillCooldowns[skill] - amount);
         }
-        // 临时提升外观挡位（实际挡位不变）
-        playerEffect.ChangeHalo(_playerData.fishData.fishTier);
-        Debug.Log("伪装技能时效已过，需重新吞噬伪装鱼学习");
+    }
+
+    private void Update()
+    {
+        UpdatePermanentSkillCooldowns();
+        HandleSkillInput();
+    }
+
+    private void UpdatePermanentSkillCooldowns()
+    {
+        foreach (var skill in baseCooldowns.Keys)
+        {
+            if (permanentSkillCooldowns[skill] > 0)
+            {
+                permanentSkillCooldowns[skill] -= Time.deltaTime;
+            }
+            else
+            {
+                permanentSkillCooldowns[skill] = 0;
+            }
+        }
+    }
+
+    private void HandleSkillInput()
+    {
+        if (Input.GetKeyDown(KeyCode.Alpha1))
+        {
+            UsePermanentSkill();
+        }
+
+        if (Input.GetKeyDown(KeyCode.Q))
+        {
+            UseOneTimeSkill();
+        }
     }
 }
