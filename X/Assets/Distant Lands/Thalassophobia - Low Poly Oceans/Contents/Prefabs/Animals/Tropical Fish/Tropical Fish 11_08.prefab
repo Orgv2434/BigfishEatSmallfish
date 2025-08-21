@@ -11,7 +11,6 @@ GameObject:
   - component: {fileID: 8438640891800865930}
   - component: {fileID: 8438640891800063148}
   - component: {fileID: 8438640891799097068}
-  - component: {fileID: 6888540437043074312}
   m_Layer: 0
   m_Name: Tropical Fish 11_08
   m_TagString: Untagged
@@ -84,18 +83,3 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!114 &6888540437043074312
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8438640891801358506}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 009ec6487ac49f24f8abd79beee13831, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  averageSpeed: 3
-  performance: 5
-  flock: {fileID: 0}
