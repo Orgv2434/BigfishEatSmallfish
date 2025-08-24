@@ -77,7 +77,7 @@ namespace DistantLands
                 fish.transform.parent = fishSchool.transform;
                 fish.transform.localScale = Vector3.one * (Random.value * 0.2f + 0.9f);
 
-                AddNetworkObject(fish);
+               
                 AddMeshColliderWithTrigger(fish);
 
                 SkillFishData skillFishData = GenerateSkillFishData();
@@ -90,21 +90,7 @@ namespace DistantLands
             }
         }
 
-        private void AddNetworkObject(GameObject fish)
-        {
-            if (fish.GetComponent<Fish>() == null) return;
-
-            NetworkObject netObj = fish.GetComponent<NetworkObject>();
-            if (netObj == null)
-            {
-                netObj = fish.AddComponent<NetworkObject>();
-            }
-
-            if (IsServer && !netObj.IsSpawned)
-            {
-                netObj.Spawn();
-            }
-        }
+     
 
         public SkillFishData GenerateSkillFishData()
         {
@@ -138,30 +124,11 @@ namespace DistantLands
 
         void Update()
         {
-            if (IsServer || !IsNetworkInitialized())
-            {
-                HandleGoalPos();
-            }
+         
             ValidateFishList();
         }
 
-        void HandleGoalPos()
-        {
-            if (Random.Range(1, 10000) < 50)
-            {
-                goalPos = new Vector3(
-                    Random.Range(-wanderSize, wanderSize),
-                    Random.Range(-wanderSize, wanderSize),
-                    Random.Range(-wanderSize, wanderSize)
-                );
-
-                // 服务器更新网络目标位置
-                if (IsServer)
-                {
-                    networkGoalPos.Value = goalPos;
-                }
-            }
-        }
+  
 
         private void ValidateFishList()
         {

@@ -144,7 +144,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 852348767
+  GlobalObjectIdHash: 4219622732
   InScenePlacedSourceGlobalObjectIdHash: 0
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
@@ -358,6 +358,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 406684cb7f47058459310f8938a24fe5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  customSpawnPoints:
+  - {fileID: 1928196214147624182, guid: f18e3b40a450ee149bbceb026b75d012, type: 3}
+  useCustomSpawnPoints: 1
+  useRandomSpawn: 0
 --- !u!1 &2377684486873763379
 GameObject:
   m_ObjectHideFlags: 0

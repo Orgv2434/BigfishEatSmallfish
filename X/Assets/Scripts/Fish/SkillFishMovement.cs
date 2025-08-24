@@ -163,13 +163,15 @@ namespace DistantLands
             }
 
             MoveAndRotate();
-
-            // 主机同步状态到网络
-            networkPosition.Value = transform.position;
-            networkRotation.Value = transform.rotation;
-            networkIsFleeing.Value = isFleeing;
-            networkFleeTimer.Value = fleeTimer;
-            networkPathIndex.Value = currentPathIndex;
+            if (IsSpawned)
+            {
+                // 主机同步状态到网络
+                networkPosition.Value = transform.position;
+                networkRotation.Value = transform.rotation;
+                networkIsFleeing.Value = isFleeing;
+                networkFleeTimer.Value = fleeTimer;
+                networkPathIndex.Value = currentPathIndex;
+            }
         }
 
         /// <summary>
@@ -451,6 +453,12 @@ namespace DistantLands
                 networkPathIndex.OnValueChanged -= OnPathIndexChanged;
                 networkPathPoints.OnListChanged -= OnPathPointsChanged;
                 CancelInvoke(nameof(FindPlayers));
+            }
+
+            // 新增：释放 NetworkList
+            if (networkPathPoints!=null)
+            {
+                networkPathPoints.Dispose();
             }
         }
     }
