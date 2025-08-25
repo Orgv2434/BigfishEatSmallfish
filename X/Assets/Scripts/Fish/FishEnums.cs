@@ -23,8 +23,9 @@ public enum FishSkillType
 // 鱼的属性类
 public class SkillFishData
 {
-    public string fishName;          // 鱼的名字
+    public int id;                   // 鱼的专属id
     public int baseExpValue;         // 鱼本身的经验值
     public FishTier fishTier;        // 鱼的挡位
     public FishSkillType skillType;  // 技能类型
+    public GameObject originalPrefab; // 新增：存储鱼的原始预制体
 }
