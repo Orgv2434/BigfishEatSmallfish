@@ -5,7 +5,7 @@ using Unity.Netcode;
 
 namespace DistantLands
 {
-    public class SkillFishManager : MonoBehaviour
+    public class SkillFishManager :NetworkManager
     {
         [Header("技能鱼基础设置")]
         [Tooltip("技能鱼预制体（建议使用不同外观区分普通鱼）")]
@@ -225,13 +225,13 @@ namespace DistantLands
                 MeshFilter meshFilter = fish.GetComponent<MeshFilter>();
                 if (meshFilter != null)
                 {
-                    MeshCollider meshCol = fish.AddComponent<MeshCollider>();
+                    MeshCollider meshCol = fish.GetComponent<MeshCollider>();
                     meshCol.convex = true;
                     meshCol.isTrigger = true;
                 }
                 else
                 {
-                    SphereCollider sphereCol = fish.AddComponent<SphereCollider>();
+                    SphereCollider sphereCol = fish.GetComponent<SphereCollider>();
                     sphereCol.radius = 0.4f;
                     sphereCol.isTrigger = true;
                 }
@@ -245,7 +245,7 @@ namespace DistantLands
         // 配置技能鱼数据（主机配置，客户端同步）
         private void ConfigureSkillData(GameObject fish, FishSkillType? targetSkill)
         {
-            FishTierEffect tierEffect = fish.GetComponent<FishTierEffect>() ?? fish.AddComponent<FishTierEffect>();
+            FishTierEffect tierEffect = fish.GetComponent<FishTierEffect>() ?? fish.GetComponent<FishTierEffect>();
             SkillFishData skillData = new SkillFishData();
 
             skillData.skillType = targetSkill.HasValue ? targetSkill.Value : GetRandomSkillTypeByProbability();

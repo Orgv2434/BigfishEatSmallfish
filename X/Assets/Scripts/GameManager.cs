@@ -177,6 +177,10 @@ public class NetworkGameManager : NetworkBehaviour
             SetGameStateServerRpc(GameState.WaitingPlayers);
         }
     }
+    public bool IsWaitingToStart()
+    {
+        return _currentState.Value==GameState.WaitingPlayers;
+    }
 
     // 等待玩家逻辑（服务器）
     private void HandleWaitingPlayersState()

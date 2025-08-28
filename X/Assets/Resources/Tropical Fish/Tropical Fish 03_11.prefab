@@ -11,6 +11,10 @@ GameObject:
   - component: {fileID: 7138579858352523480}
   - component: {fileID: 7138579858353293626}
   - component: {fileID: 7138579858354424570}
+  - component: {fileID: -9208040490909913467}
+  - component: {fileID: 7850395953655429029}
+  - component: {fileID: 4537325244893152598}
+  - component: {fileID: -2715191393410043873}
   m_Layer: 0
   m_Name: Tropical Fish 03_11
   m_TagString: Untagged
@@ -83,3 +87,93 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &-9208040490909913467
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7138579858352493880}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  GlobalObjectIdHash: 816478268
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 1
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+--- !u!64 &7850395953655429029
+MeshCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7138579858352493880}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 5
+  m_Convex: 1
+  m_CookingOptions: 30
+  m_Mesh: {fileID: 4300570, guid: 67922b04448f39f40804e98fba4c70e5, type: 3}
+--- !u!114 &4537325244893152598
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7138579858352493880}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e53a15c28bf1609489d453c9cefd3478, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  fishData:
+    id: 0
+    baseExpValue: 0
+    fishTier: 0
+    skillType: 0
+    originalPrefab: {fileID: 0}
+  tierPrefabs: []
+  scalePlus: 0.8
+--- !u!114 &-2715191393410043873
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7138579858352493880}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 314cd8c8c45b49c4ca2259ea26f83a5e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  averageSpeed: 1
+  performance: 5
+  flock: {fileID: 0}
+  myZone:
+    name: Spawn Zone
+    enabled: 1
+    spawnCenter: {fileID: 0}
+    spawnRadius: 5
+    spawnCount: 10
+    lockYPosition: 1
+    customPrefabs: []
+    overrideTierRange: 0
+    minTier: 0
+    maxTier: 2
+    gizmoColor: {r: 0, g: 1, b: 0, a: 0.5}

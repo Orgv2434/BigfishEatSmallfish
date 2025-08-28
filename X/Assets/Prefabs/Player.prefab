@@ -238,10 +238,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   fishData:
-    fishName: "\u73A9\u5BB6\u9C7C"
+    id: 0
     baseExpValue: 0
     fishTier: 0
     skillType: 0
+    originalPrefab: {fileID: 0}
   oneTimeSkills: 
   maxHealth: 100
   currentHealth: 0
@@ -309,10 +310,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   fishData:
-    fishName: 
+    id: 0
     baseExpValue: 0
     fishTier: 0
     skillType: 0
+    originalPrefab: {fileID: 0}
   tierPrefabs: []
   scalePlus: 0.8
 --- !u!114 &3364906762822537657
@@ -360,8 +362,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   customSpawnPoints:
   - {fileID: 1928196214147624182, guid: f18e3b40a450ee149bbceb026b75d012, type: 3}
+  - {fileID: 1928196214147624182, guid: e33957f97812f2f458409d194cec2a4d, type: 3}
   useCustomSpawnPoints: 1
   useRandomSpawn: 0
+  spawnPointCheckRadius: 0.1
 --- !u!1 &2377684486873763379
 GameObject:
   m_ObjectHideFlags: 0
@@ -512,8 +516,12 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7385877216119025910, guid: 9d2f12b7f5fc53c4daccc35dc5890044, type: 3}
+      propertyPath: GlobalObjectIdHash
+      value: 852348767
+      objectReference: {fileID: 0}
     m_RemovedComponents:
-    - {fileID: 5736271493057573099, guid: 9d2f12b7f5fc53c4daccc35dc5890044, type: 3}
+    - {fileID: 0}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []

@@ -25,7 +25,7 @@ public static class FishPrefabLoader
             if (prefab != null )
             {
                 fishPrefabs.Add(prefab);
-                Debug.Log($"成功加载鱼预制体：{prefab.name}");
+   
             }
         }
 
