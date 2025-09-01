@@ -348,6 +348,8 @@ MonoBehaviour:
   InLocalSpace: 0
   Interpolate: 1
   SlerpPosition: 0
+  useClientAuthorityByDefault: 0
+  forceServerAuthorityOnSpawn: 1
 --- !u!114 &3689676442734357742
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -360,12 +362,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 406684cb7f47058459310f8938a24fe5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  playerInput: {fileID: 0}
+  defaultControlScheme: Keyboard&Mouse
   customSpawnPoints:
   - {fileID: 1928196214147624182, guid: f18e3b40a450ee149bbceb026b75d012, type: 3}
-  - {fileID: 1928196214147624182, guid: e33957f97812f2f458409d194cec2a4d, type: 3}
+  - {fileID: 438763736979020843, guid: 0eb8ea019a7f4c74cbc2cec557ec03e6, type: 3}
+  - {fileID: 98338780760997126, guid: d8e997042e8a47e44934f75e7b8f012e, type: 3}
   useCustomSpawnPoints: 1
   useRandomSpawn: 0
   spawnPointCheckRadius: 0.1
+  debugMode: 1
+  fallbackMapSize: 20
+  groundLayer:
+    serializedVersion: 2
+    m_Bits: 0
 --- !u!1 &2377684486873763379
 GameObject:
   m_ObjectHideFlags: 0
