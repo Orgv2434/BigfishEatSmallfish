@@ -4,9 +4,9 @@ using UnityEngine.InputSystem;
 public class ThirdPersonMove : MonoBehaviour
 {
     [Header("控制设置")]
-    public double rotateSpeed = 90.0;         // 旋转速度（度/秒，绕 Y 轴）
-    public double verticalSpeed = 4.0;        // Y轴移动速度（W/S 控制）
-    public double moveSpeed = 5.0;            // 前进速度（沿自身 Z 轴）
+    public float rotateSpeed = 90.0f;         // 旋转速度（度/秒，绕 Y 轴）
+    public float verticalSpeed = 4.0f;        // Y轴移动速度（W/S 控制）
+    public float moveSpeed = 5.0f;            // 前进速度（沿自身 Z 轴）
     public double sprintMultiplier = 3.0;     // 冲刺速度倍数
     public double sprintDuration = 0.5;       // 冲刺持续时间（秒）
     public double sprintCooldown = 5.0;       // 冲刺冷却时间（秒）
@@ -58,7 +58,6 @@ public class ThirdPersonMove : MonoBehaviour
         if (_controller == null) return; // 组件缺失时直接退出Update，避免无效计算
 
         HandleCooldown();       // 处理冲刺冷却
-        HandleRotation();       // 处理角色旋转（A/D）
         Vector3 moveDir = CalculateMoveDirection(); // 计算移动方向
         ApplyGravity(ref moveDir); // 应用重力和浮力
         ExecuteMovement(moveDir); // 执行移动
@@ -89,56 +88,48 @@ public class ThirdPersonMove : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// 处理角色旋转（A/D 键，绕 Y 轴旋转）
-    /// </summary>
-    private void HandleRotation()
-    {
-        // 使用阈值判断，减少微小输入导致的无效计算
-        if (Mathf.Abs(_rotateInput.x) > 0.1f)
-        {
-            // 注意：Rotate参数需要float，这里进行显式转换
-            float rotateAmount = (float)(_rotateInput.x * rotateSpeed * Time.deltaTime);
-            _transform.Rotate(0, rotateAmount, 0);
-        }
-    }
 
-    /// <summary>
-    /// 计算移动方向（沿自身 Z 轴前进）
-    /// </summary>
-    private Vector3 CalculateMoveDirection()
-    {
-        Vector3 moveDir = Vector3.zero;
 
-        // 1. 垂直移动（W/S 控制 Y 轴）
-        moveDir.y = (float)(_rotateInput.y * verticalSpeed);
+ /// <summary>
+ /// 计算移动方向（W 前进；A/D 左右游动并带转向；Space/LeftCtrl 上下）
+ /// </summary>
+ private Vector3 CalculateMoveDirection()
+ {
+     Vector3 moveDir = Vector3.zero;
 
-        // 2. 沿自身 Z 轴的水平移动（仅在右键按住或冲刺时）
-        bool isMovingForward = _isSprinting || _isRightMouseHeld;
-        if (isMovingForward)
-        {
-            Vector3 selfForward = _transform.forward;
-            selfForward.y = 0; // 仅保留水平方向
-            selfForward.Normalize();
+     // 前进（仅 W）
+     float forwardInput = Input.GetKey(KeyCode.W) ? 1f : 0f;
 
-            double currentSpeed = _isSprinting ? moveSpeed * sprintMultiplier : moveSpeed;
-            moveDir += selfForward * (float)currentSpeed;
-        }
+     // 上下浮动（Space / LeftCtrl）
+     float verticalInput = 0f;
+     if (Input.GetKey(KeyCode.Space)) verticalInput = 1f;
+     else if (Input.GetKey(KeyCode.LeftControl)) verticalInput = -1f;
 
-        // 3. 冲刺状态管理
-        if (_isSprinting)
-        {
-            _sprintTimer += Time.deltaTime;
-            if (_sprintTimer >= sprintDuration)
-            {
-                _isSprinting = false;
-                _sprintTimer = 0;
-                _isOnCooldown = true;
-            }
-        }
+     // 左右（A/D）
+     float lateralInput = 0f;
+     if (Input.GetKey(KeyCode.A)) lateralInput = -1f;
+     else if (Input.GetKey(KeyCode.D)) lateralInput = 1f;
+   
+     // 方向基准
+     Vector3 selfForward = _transform.forward;
+     Vector3 selfRight = _transform.right;
+     Vector3 selfUp = _transform.up;
 
-        return moveDir;
-    }
+     // 合成移动向量
+     moveDir += selfForward * (float)(moveSpeed * forwardInput);
+     moveDir += selfRight * (float)(moveSpeed * 0.5f * lateralInput); 
+     moveDir += selfUp * (float)(verticalSpeed * verticalInput);
+     
+     
+     if (lateralInput != 0f)
+     {
+         float lateralTurnMultiplier = 0.5f; 
+         float yawRotation = lateralInput * rotateSpeed * lateralTurnMultiplier * Time.deltaTime;
+         _transform.Rotate(0f, yawRotation, 0f, Space.World);
+     }
+
+     return moveDir;
+ }
 
     /// <summary>
     /// 应用重力和浮力效果

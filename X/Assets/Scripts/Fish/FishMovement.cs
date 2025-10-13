@@ -84,6 +84,7 @@ public class FishMovement : MonoBehaviour
         if (!isFleeing && Vector3.Distance(transform.position, player.position) < playerDetectRange)
         {
             isFleeing = true;
+            Debug.Log("玩家接近，鱼群开始逃窜！");
             fleeTimer = fleeDuration;
         }
     }

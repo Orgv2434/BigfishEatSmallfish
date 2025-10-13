@@ -60,7 +60,6 @@ namespace DistantLands
                 if (fishScript == null)
                 {
                     fishScript = fish.AddComponent<Fish>();
-                    Debug.Log($"鱼预制体 {randomFishPrefab.name} 未挂载 Fish 脚本，已自动添加");
                 }
                 fishScript.flock = this;
 
