@@ -198,8 +198,9 @@ public class PlayerFishData : MonoBehaviour
             else
             {
                 Debug.Log("³Ôµ½");
-                Destroy(otherFish.gameObject);
                 skillSystem.EatSkillFish(otherFish.fishData);
+                Destroy(otherFish.gameObject);
+
             }
         }
     }

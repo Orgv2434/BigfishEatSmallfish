@@ -45,7 +45,7 @@ namespace DistantLands
                 AddMeshColliderWithTrigger(fish);
 
                 // 1. 生成 SkillFishData 并设置挡位等信息
-                SkillFishData skillFishData = GenerateSkillFishData();
+                SkillFishData skillFishData = GenerateFishData();
 
                 // 2. 初始化 FishTierEffect 组件
                 FishTierEffect tierEffect = fish.GetComponent<FishTierEffect>();
@@ -53,8 +53,8 @@ namespace DistantLands
                 {
                     tierEffect = fish.AddComponent<FishTierEffect>();
                 }
+                skillFishData.skillType = FishSkillType.None; // 默认无技能，可根据需求修改
                 tierEffect.fishData = skillFishData;
-
                 // 3. 关联鱼群管理器到 Fish 脚本
                 Fish fishScript = fish.GetComponent<Fish>();
                 if (fishScript == null)
@@ -67,7 +67,7 @@ namespace DistantLands
             }
         }
 
-        private SkillFishData GenerateSkillFishData()
+        private SkillFishData GenerateFishData()
         {
             SkillFishData data = new SkillFishData();
 
@@ -92,6 +92,7 @@ namespace DistantLands
             }
 
             data.fishTier = (FishTier)actualTier;
+
             return data;
         }
 

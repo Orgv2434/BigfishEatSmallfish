@@ -35,6 +35,7 @@ public class FishSkillSystem : MonoBehaviour
     // 执行技能效果
     private void ActivateSkill(FishSkillType skill)
     {
+      
         switch (skill)
         {
             case FishSkillType.ExpMultiplier:
@@ -89,7 +90,7 @@ public class FishSkillSystem : MonoBehaviour
         bool skillTriggered = false;
         float skillTimer = duration;
 
-        // 模拟“主动触发”逻辑（需结合输入系统，如 Input.GetKeyDown(KeyCode.C)）
+        // 模拟“主动触发”逻辑
         while (skillTimer > 0)
         {
             if (Input.GetKeyDown(KeyCode.C) && !skillTriggered)

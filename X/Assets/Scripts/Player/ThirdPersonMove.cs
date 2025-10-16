@@ -29,7 +29,6 @@ public class ThirdPersonMove : MonoBehaviour
     // 移动与冲刺状态（使用double提高精度）
     private Vector3 _velocity;                // 物理速度（处理重力）
     private bool _isSprinting;                // 是否处于冲刺中
-    private double _sprintTimer;              // 冲刺计时器
     private double _cooldownTimer;            // 冷却计时器
     private bool _isOnCooldown;               // 是否处于冷却中
     [Tooltip("是否学会冲刺")]
@@ -172,7 +171,6 @@ public class ThirdPersonMove : MonoBehaviour
         if (_isLeftMousePressed && !_isOnCooldown && !_isSprinting&&haveDush)
         {
             _isSprinting = true;
-            _sprintTimer = 0;
         }
         _isLeftMousePressed = false;
     }

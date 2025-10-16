@@ -32,12 +32,12 @@ namespace YourNamespace // 可根据项目需求替换为实际命名空间
 
             if (otherFish != null)
             {
-                Debug.Log($"找到父物体上的 Fish 组件：{otherFish.gameObject.name}");
+                Debug.Log($"找到父物体上的 FishTierEffect 组件：{otherFish.gameObject.name}");
                 playerFishData?.HandleFishCollision(otherFish); // 安全调用碰撞处理逻辑
             }
             else
             {
-                Debug.LogWarning($"未在 {other.gameObject.name} 的父物体中找到 Fish 组件");
+                Debug.LogWarning($"未在 {other.gameObject.name} 的父物体中找到 FishTierEffect 组件");
               otherFish = other.GetComponent<FishTierEffect>();
                 playerFishData?.HandleFishCollision(otherFish); // 安全调用碰撞处理逻辑
             }
