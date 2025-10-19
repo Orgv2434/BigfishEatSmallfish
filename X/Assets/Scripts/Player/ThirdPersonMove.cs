@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -38,18 +39,22 @@ public class ThirdPersonMove : MonoBehaviour
     private CharacterController _controller;
     private Transform _transform;             // 缓存Transform组件
     private Vector3 _gravityCache;            // 缓存重力值（减少重复访问）
-
+    private float _currentMoveSpeed; // 当前实际移动速度（受体型影响）
+private float _currentRotateSpeed; // 当前实际转向速度（受体型影响）
     void Start()
     {
         // 缓存常用组件和值，减少GetComponent和重复计算
         _transform = transform;
         _controller = GetComponent<CharacterController>();
         _gravityCache = Physics.gravity;
+    // 新增：初始化当前速度为配置值
+    _currentMoveSpeed = moveSpeed;
+    _currentRotateSpeed = rotateSpeed;
 
-        if (_controller == null)
-        {
-            Debug.LogError("缺少 CharacterController 组件！请添加后运行。");
-        }
+    if (_controller == null)
+    {
+        Debug.LogError("缺少 CharacterController 组件！请添加后运行。");
+    }
     }
 
     void Update()
@@ -92,49 +97,50 @@ public class ThirdPersonMove : MonoBehaviour
  /// <summary>
  /// 计算移动方向（W 前进；A/D 左右游动并带转向；Space/LeftCtrl 上下）
  /// </summary>
- private Vector3 CalculateMoveDirection()
- {
-     Vector3 moveDir = Vector3.zero;
+private Vector3 CalculateMoveDirection()
+{
+    Vector3 moveDir = Vector3.zero;
 
-     // 前进（仅 W）
-     float forwardInput = Input.GetKey(KeyCode.W) ? 1f : 0f;
+    // 前进（仅 W）
+    float forwardInput = Input.GetKey(KeyCode.W) ? 1f : 0f;
 
-     // 上下浮动（Space / LeftCtrl）
-     float verticalInput = 0f;
-     if (Input.GetKey(KeyCode.Space)) verticalInput = 1f;
-     else if (Input.GetKey(KeyCode.LeftControl)) verticalInput = -1f;
+    // 上下浮动（Space / LeftCtrl）
+    float verticalInput = 0f;
+    if (Input.GetKey(KeyCode.Space)) verticalInput = 1f;
+    else if (Input.GetKey(KeyCode.LeftControl)) verticalInput = -1f;
 
-     // 左右（A/D）
-     float lateralInput = 0f;
-     if (Input.GetKey(KeyCode.A)) lateralInput = -1f;
-     else if (Input.GetKey(KeyCode.D)) lateralInput = 1f;
-   
-     // 方向基准
-     Vector3 selfForward = _transform.forward;
-     Vector3 selfRight = _transform.right;
-     Vector3 selfUp = _transform.up;
+    // 左右（A/D）
+    float lateralInput = 0f;
+    if (Input.GetKey(KeyCode.A)) lateralInput = -1f;
+    else if (Input.GetKey(KeyCode.D)) lateralInput = 1f;
+  
+    // 方向基准
+    Vector3 selfForward = _transform.forward;
+    Vector3 selfRight = _transform.right;
+    Vector3 selfUp = _transform.up;
 
-     // 合成移动向量
-     moveDir += selfForward * (float)(moveSpeed * forwardInput);
-     moveDir += selfRight * (float)(moveSpeed * 0.5f * lateralInput); 
-     moveDir += selfUp * (float)(verticalSpeed * verticalInput);
-     
-     
-     if (lateralInput != 0f)
-     {
-         float lateralTurnMultiplier = 0.5f; 
-         float yawRotation = lateralInput * rotateSpeed * lateralTurnMultiplier * Time.deltaTime;
-         _transform.Rotate(0f, yawRotation, 0f, Space.World);
-     }
-
-     return moveDir;
- }
-
-    /// <summary>
-    /// 应用重力和浮力效果
-    /// </summary>
-    private void ApplyGravity(ref Vector3 moveDir)
+    // 合成移动向量（使用_currentMoveSpeed替换moveSpeed）
+    moveDir += selfForward * (float)(_currentMoveSpeed * forwardInput);
+    moveDir += selfRight * (float)(_currentMoveSpeed * 0.5f * lateralInput); 
+    moveDir += selfUp * (float)(verticalSpeed * verticalInput);
+    
+    
+    if (lateralInput != 0f)
     {
+        float lateralTurnMultiplier = 0.5f; 
+        // 转向速度使用_currentRotateSpeed替换rotateSpeed
+        float yawRotation = lateralInput * _currentRotateSpeed * lateralTurnMultiplier * Time.deltaTime;
+        _transform.Rotate(0f, yawRotation, 0f, Space.World);
+    }
+
+    return moveDir;
+}
+
+/// <summary>
+/// 应用重力和浮力效果
+/// </summary>
+private void ApplyGravity(ref Vector3 moveDir)
+{
         if (!useGravity) return;
 
         if (!_controller.isGrounded)
@@ -162,24 +168,55 @@ public class ThirdPersonMove : MonoBehaviour
     {
         _controller.Move(moveDir * Time.deltaTime);
     }
+/// <summary>
+/// 外部调用此方法更新移动速度和转向速度
+/// （供PlayerFishData类的经验变化时调用）
+/// </summary>
+/// <param name="newMoveSpeed">新的移动速度</param>
+/// <param name="newRotateSpeed">新的转向速度</param>
+public void UpdateSpeedStats(float newMoveSpeed, float newRotateSpeed)
+{
+    // 更新当前速度（限制最小值，避免无效值）
+    _currentMoveSpeed = Mathf.Max(newMoveSpeed, 0.1f); // 最低0.1防止完全不动
+    _currentRotateSpeed = Mathf.Max(newRotateSpeed, 0.1f);
 
-    /// <summary>
-    /// 处理鼠标左键冲刺输入
-    /// </summary>
-    private void HandleSprintInput()
+    if (showDebugLogs)
     {
-        if (_isLeftMousePressed && !_isOnCooldown && !_isSprinting&&haveDush)
-        {
-            _isSprinting = true;
-        }
-        _isLeftMousePressed = false;
+        Debug.Log($"速度更新 - 移动速度: {_currentMoveSpeed}, 转向速度: {_currentRotateSpeed}");
     }
+}
 
-    /// <summary>
-    /// 绘制调试射线
-    /// </summary>
-    private void DrawDebugRay()
+/// <summary>
+/// 处理鼠标左键冲刺输入
+/// </summary>
+private void HandleSprintInput()
+{
+    if (_isLeftMousePressed && !_isOnCooldown && !_isSprinting && haveDush)
     {
+        _isSprinting = true;
+        StartCoroutine(ApplySprint()); // 新增协程处理冲刺时效
+    }
+    _isLeftMousePressed = false;
+}
+
+// 新增：冲刺协程（使用当前速度计算冲刺速度）
+private IEnumerator ApplySprint()
+{
+    float originalMoveSpeed = _currentMoveSpeed;
+    _currentMoveSpeed *= (float)sprintMultiplier; // 冲刺时基于当前速度放大
+    
+    yield return new WaitForSeconds((float)sprintDuration);
+    
+    _currentMoveSpeed = originalMoveSpeed; // 恢复原速度
+    _isSprinting = false;
+    _isOnCooldown = true; // 进入冷却
+}
+
+/// <summary>
+/// 绘制调试射线
+/// </summary>
+private void DrawDebugRay()
+{
         Vector3 selfForward = _transform.forward;
         selfForward.y = 0;
         selfForward.Normalize();
