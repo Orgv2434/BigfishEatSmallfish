@@ -8,4 +8,5 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Distant Lands/Thalassophobia - Low Poly Oceans/Scenes/Coral Reef.unity
     guid: 94757fd23e84f8c478af58f353a5b3c1
-  m_configObjects: {}
+  m_configObjects:
+    com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 5b564c36209cd024ea7f2b1a6aaa3836, type: 3}

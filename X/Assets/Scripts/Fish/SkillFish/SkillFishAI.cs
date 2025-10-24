@@ -12,6 +12,7 @@ public class SkillFishAI : MonoBehaviour
     public float rotationSpeed = 5f;
     [Tooltip("正常状态下随机变向的时间间隔（范围）")]
     public Vector2 directionChangeIntervalRange = new Vector2(2f, 4.5f);
+    public Transform playerTransform;
     private float currentDirectionChangeInterval; // 当前生效的变向间隔
 
 

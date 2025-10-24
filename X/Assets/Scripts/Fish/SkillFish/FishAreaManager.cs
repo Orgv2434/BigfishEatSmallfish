@@ -48,32 +48,126 @@ public class FishAreaManager : MonoBehaviour
     
     private Dictionary<string, Queue<GameObject>> objectPools = new Dictionary<string, Queue<GameObject>>();
     private HashSet<GameObject> inactiveObjects = new HashSet<GameObject>();
-
+    private bool isPlayerAssigned = false; 
     private void Awake()
     {
         LoadFishPrefabs();
         InitializeObjectPools();
     }
 
-    private void Start()
+private void Start()
+{
+    CheckCriticalSettings();
+    
+    // 移除初始生成逻辑，改为在游戏开始时生成
+    if (fishPrefabs != null && fishPrefabs.Count == 0)
     {
-        CheckCriticalSettings();
-        
-        if (fishPrefabs != null && fishPrefabs.Count > 0)
+        Debug.LogError("[FishAreaManager] 未加载到任何鱼预制体！");
+    }
+}
+
+private void Update()
+{
+    // 玩家未就绪或预制体为空时不执行逻辑
+    if (fishPrefabs == null || fishPrefabs.Count == 0 || !isPlayerAssigned)
+        return;
+
+    // 仅在游戏进行状态时生成鱼
+    if (FishGameFlowManager.Instance.CurrentState == FishGameFlowManager.GameState.GamePlaying)
+    {
+        UpdateSpawnLogic();
+    }
+    
+    CleanupInvalidReferences();
+}
+    
+    #region 游戏状态变化事件
+private void OnEnable()
+{
+    // 注册游戏状态变化事件
+    if (FishGameFlowManager.Instance != null)
+    {
+        FishGameFlowManager.Instance.OnGameStateChanged += OnGameStateChanged;
+    }
+}
+
+    private void OnDisable()
+    {
+        // 取消事件注册，避免内存泄漏
+        if (FishGameFlowManager.Instance != null)
+        {
+            FishGameFlowManager.Instance.OnGameStateChanged -= OnGameStateChanged;
+        }
+    }
+    private void OnGameStateChanged(FishGameFlowManager.GameState newState)
+    {
+        switch (newState)
+        {
+            case FishGameFlowManager.GameState.GamePlaying:
+                AssignPlayerReference(); // 进入游戏时赋值玩家
+                break;
+            case FishGameFlowManager.GameState.MainMenu:
+            case FishGameFlowManager.GameState.PrepareStage:
+            case FishGameFlowManager.GameState.GameOver:
+                ResetPlayerReference(); // 非游戏阶段重置玩家
+                break;
+        }
+    }
+
+/// <summary>
+/// 从游戏管理器获取玩家引用（仅在游戏阶段）
+/// </summary>
+private void AssignPlayerReference()
+{
+    if (isPlayerAssigned) return; // 避免重复赋值
+
+    // 从FishGameFlowManager获取玩家（关键：与游戏管理器同步）
+    if (FishGameFlowManager.Instance != null && FishGameFlowManager.Instance.playerFish != null)
+    {
+        player = FishGameFlowManager.Instance.playerFish.transform;
+        isPlayerAssigned = true;
+        Debug.Log("[FishAreaManager] 已从游戏管理器获取玩家引用");
+
+        // 【添加位置】玩家赋值成功后，同步更新所有鱼的AI目标
+        if (player != null)
+        {
+            UpdateAllFishPlayerReference();
+        }
+
+        // 玩家就绪后，开始生成鱼
+        if (fishPrefabs != null && fishPrefabs.Count > 0 && activeFishes.Count == 0)
         {
             StartCoroutine(InitialSpawnRoutine());
         }
     }
-
-    private void Update()
+    else
     {
-        if (fishPrefabs == null || fishPrefabs.Count == 0 || player == null)
-            return;
-
-        UpdateSpawnLogic();
-        CleanupInvalidReferences();
+        Debug.LogWarning("[FishAreaManager] 游戏已开始，但游戏管理器中未找到玩家对象！");
     }
-
+}
+private void UpdateAllFishPlayerReference()
+{
+    foreach (var fishAI in activeFishes)
+    {
+        if (fishAI != null)
+        {
+            fishAI.playerTransform = player; // 直接更新AI中的玩家引用
+        }
+    }
+}
+    /// <summary>
+    /// 重置玩家引用（非游戏阶段）
+    /// </summary>
+    private void ResetPlayerReference()
+    {
+        if (isPlayerAssigned)
+        {
+            player = null;
+            isPlayerAssigned = false;
+            Debug.Log("[FishAreaManager] 已重置玩家引用");
+        }
+    }
+    #endregion
     #region 预制体加载与初始化
     private void LoadFishPrefabs()
     {
@@ -120,25 +214,20 @@ public class FishAreaManager : MonoBehaviour
         }
     }
 
-    private void CheckCriticalSettings()
+ private void CheckCriticalSettings()
+{
+    if (spawnRadius <= 0)
     {
-        if (player == null)
-        {
-            Debug.LogWarning("[FishAreaManager] 未指定玩家引用，鱼将无法触发逃窜行为！");
-        }
-
-        if (spawnRadius <= 0)
-        {
-            Debug.LogWarning("[FishAreaManager] 活动区域半径不能为0，已自动设置为10");
-            spawnRadius = 10f;
-        }
-
-        if (maxTier <= 0)
-        {
-            Debug.LogWarning("[FishAreaManager] 最大挡位不能小于1，已自动设置为5");
-            maxTier = 5;
-        }
+        Debug.LogWarning("[FishAreaManager] 活动区域半径不能为0，已自动设置为10");
+        spawnRadius = 10f;
     }
+
+    if (maxTier <= 0)
+    {
+        Debug.LogWarning("[FishAreaManager] 最大挡位不能小于1，已自动设置为5");
+        maxTier = 5;
+    }
+}
     #endregion
 
     #region 鱼生成逻辑

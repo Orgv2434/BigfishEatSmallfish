@@ -6,6 +6,7 @@ TagManager:
   tags:
   - head
   - tail
+  - ThirdPersonCamera
   layers:
   - Default
   - TransparentFX

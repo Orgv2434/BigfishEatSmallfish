@@ -6,7 +6,8 @@ public class ThirdPersonMove : MonoBehaviour
 {
     [Header("控制设置")]
     public float rotateSpeed = 90.0f;         // 旋转速度（度/秒，绕 Y 轴）
-    public float verticalSpeed = 4.0f;        // Y轴移动速度（W/S 控制）
+    public float ascendSpeed = 4.0f;          // 上浮速度（Y轴正方向）
+    public float descendSpeed = 4.0f;         // 下潜速度（Y轴负方向）
     public float moveSpeed = 5.0f;            // 前进速度（沿自身 Z 轴）
     public double sprintMultiplier = 3.0;     // 冲刺速度倍数
     public double sprintDuration = 0.5;       // 冲刺持续时间（秒）
@@ -22,60 +23,72 @@ public class ThirdPersonMove : MonoBehaviour
     public float debugRayLength = 2.0f;       // 调试射线长度
     public Color debugRayColor = Color.red;   // 调试射线颜色
 
-    // 输入状态变量
-    private Vector2 _rotateInput;             // A/D（X：旋转）、W/S（Y：垂直移动）输入
-    private bool _isRightMouseHeld;           // 鼠标右键按住状态（控制前进）
-    private bool _isLeftMousePressed;         // 鼠标左键按下状态（触发冲刺）
+    [Tooltip("是否学会冲刺")]
+    public bool haveDush;                    // 是否有冲刺技能
 
-    // 移动与冲刺状态（使用double提高精度）
-    private Vector3 _velocity;                // 物理速度（处理重力）
+    // 输入状态变量（通过InputManager获取）
+    private Vector2 _moveInput;               // 移动输入（X：转向/左右，Y：前后）
+    private bool _isSprintingInput;           // 冲刺输入状态
+    private bool _isAscending;                // 上浮状态（按住=true）
+    private bool _isDescending;               // 下潜状态（按住=true）
+
+
     private bool _isSprinting;                // 是否处于冲刺中
     private double _cooldownTimer;            // 冷却计时器
     private bool _isOnCooldown;               // 是否处于冷却中
-    [Tooltip("是否学会冲刺")]
-    public bool haveDush;                    // 是否有冲刺技能
+    private float _currentMoveSpeed;          // 当前移动速度（受体型影响）
+    private float _currentRotateSpeed;        // 当前转向速度（受体型影响）
 
     // 组件引用（缓存）
     private CharacterController _controller;
     private Transform _transform;             // 缓存Transform组件
-    private Vector3 _gravityCache;            // 缓存重力值（减少重复访问）
-    private float _currentMoveSpeed; // 当前实际移动速度（受体型影响）
-private float _currentRotateSpeed; // 当前实际转向速度（受体型影响）
-    void Start()
+    private Vector3 _gravityCache;            // 缓存重力值
+
+    private void Start()
     {
-        // 缓存常用组件和值，减少GetComponent和重复计算
+        // 缓存组件
         _transform = transform;
         _controller = GetComponent<CharacterController>();
         _gravityCache = Physics.gravity;
-    // 新增：初始化当前速度为配置值
-    _currentMoveSpeed = moveSpeed;
-    _currentRotateSpeed = rotateSpeed;
 
-    if (_controller == null)
-    {
-        Debug.LogError("缺少 CharacterController 组件！请添加后运行。");
-    }
-    }
+        // 初始化速度
+        _currentMoveSpeed = moveSpeed;
+        _currentRotateSpeed = rotateSpeed;
 
-    void Update()
-    {
-        if (_controller == null) return; // 组件缺失时直接退出Update，避免无效计算
-
-        HandleCooldown();       // 处理冲刺冷却
-        Vector3 moveDir = CalculateMoveDirection(); // 计算移动方向
-        ApplyGravity(ref moveDir); // 应用重力和浮力
-        ExecuteMovement(moveDir); // 执行移动
-        HandleSprintInput();    // 处理冲刺输入（鼠标左键）
-
-        if (showDebugRay) DrawDebugRay(); // 仅在启用时绘制调试射线
-
-        // 调试鼠标右键状态
-        if (showDebugLogs)
+        // 检查必要组件
+        if (_controller == null)
         {
-            Debug.Log($"右键状态: {_isRightMouseHeld}");
+            Debug.LogError("缺少 CharacterController 组件！请添加后运行。");
+        }
+
+        // 绑定输入事件
+        BindInputEvents();
+    }
+
+    private void Update()
+    {
+        if (FishGameFlowManager.Instance.CurrentState != FishGameFlowManager.GameState.GamePlaying)
+            return;
+        if (_controller == null) return;
+
+        HandleCooldown();
+        Vector3 moveDir = CalculateMoveDirection();
+        ExecuteMovement(moveDir);
+        HandleSprintInput();
+        HandleVerticalMovement(); // 新增：每帧驱动垂直移动
+        if (showDebugLogs) DrawDebugRay();
+    }
+    private void HandleVerticalMovement()
+    {
+        if (_isAscending)
+        {
+            _controller.Move(Vector3.up * ascendSpeed * Time.deltaTime);
+        }
+        else if (_isDescending)
+        {
+            _controller.Move(Vector3.down * descendSpeed * Time.deltaTime);
         }
     }
-
     /// <summary>
     /// 处理冲刺冷却逻辑
     /// </summary>
@@ -92,74 +105,33 @@ private float _currentRotateSpeed; // 当前实际转向速度（受体型影响）
         }
     }
 
-
-
- /// <summary>
- /// 计算移动方向（W 前进；A/D 左右游动并带转向；Space/LeftCtrl 上下）
- /// </summary>
-private Vector3 CalculateMoveDirection()
-{
-    Vector3 moveDir = Vector3.zero;
-
-    // 前进（仅 W）
-    float forwardInput = Input.GetKey(KeyCode.W) ? 1f : 0f;
-
-    // 上下浮动（Space / LeftCtrl）
-    float verticalInput = 0f;
-    if (Input.GetKey(KeyCode.Space)) verticalInput = 1f;
-    else if (Input.GetKey(KeyCode.LeftControl)) verticalInput = -1f;
-
-    // 左右（A/D）
-    float lateralInput = 0f;
-    if (Input.GetKey(KeyCode.A)) lateralInput = -1f;
-    else if (Input.GetKey(KeyCode.D)) lateralInput = 1f;
-  
-    // 方向基准
-    Vector3 selfForward = _transform.forward;
-    Vector3 selfRight = _transform.right;
-    Vector3 selfUp = _transform.up;
-
-    // 合成移动向量（使用_currentMoveSpeed替换moveSpeed）
-    moveDir += selfForward * (float)(_currentMoveSpeed * forwardInput);
-    moveDir += selfRight * (float)(_currentMoveSpeed * 0.5f * lateralInput); 
-    moveDir += selfUp * (float)(verticalSpeed * verticalInput);
-    
-    
-    if (lateralInput != 0f)
+    /// <summary>
+    /// 计算移动方向（移动输入包含转向逻辑）
+    /// </summary>
+    private Vector3 CalculateMoveDirection()
     {
-        float lateralTurnMultiplier = 0.5f; 
-        // 转向速度使用_currentRotateSpeed替换rotateSpeed
-        float yawRotation = lateralInput * _currentRotateSpeed * lateralTurnMultiplier * Time.deltaTime;
-        _transform.Rotate(0f, yawRotation, 0f, Space.World);
+        Vector3 moveDir = Vector3.zero;
+
+        // 方向基准
+        Vector3 selfForward = _transform.forward;
+        Vector3 selfRight = _transform.right;
+        Vector3 selfUp = _transform.up;
+
+        // 前后移动（Y轴输入）
+        moveDir += selfForward * _currentMoveSpeed * _moveInput.y;
+        // 左右移动（X轴输入，降低横向移动权重）
+        moveDir += selfRight * _currentMoveSpeed * 0.5f * _moveInput.x;
+
+        // 转向逻辑（基于移动输入的X轴）
+        if (_moveInput.x != 0)
+        {
+            float yawRotation = _moveInput.x * _currentRotateSpeed * Time.deltaTime;
+            _transform.Rotate(0f, yawRotation, 0f, Space.World);
+        }
+
+        return moveDir;
     }
 
-    return moveDir;
-}
-
-/// <summary>
-/// 应用重力和浮力效果
-/// </summary>
-private void ApplyGravity(ref Vector3 moveDir)
-{
-        if (!useGravity) return;
-
-        if (!_controller.isGrounded)
-        {
-            // 重力计算使用double中间值提高精度
-            double velocityY = _velocity.y;
-            velocityY += _gravityCache.y * Time.deltaTime;
-            if (velocityY < 0)
-            {
-                velocityY *= buoyancy;
-            }
-            _velocity.y = (float)velocityY;
-            moveDir.y += _velocity.y;
-        }
-        else
-        {
-            _velocity.y = -0.5f;
-        }
-    }
 
     /// <summary>
     /// 执行移动
@@ -168,55 +140,55 @@ private void ApplyGravity(ref Vector3 moveDir)
     {
         _controller.Move(moveDir * Time.deltaTime);
     }
-/// <summary>
-/// 外部调用此方法更新移动速度和转向速度
-/// （供PlayerFishData类的经验变化时调用）
-/// </summary>
-/// <param name="newMoveSpeed">新的移动速度</param>
-/// <param name="newRotateSpeed">新的转向速度</param>
-public void UpdateSpeedStats(float newMoveSpeed, float newRotateSpeed)
-{
-    // 更新当前速度（限制最小值，避免无效值）
-    _currentMoveSpeed = Mathf.Max(newMoveSpeed, 0.1f); // 最低0.1防止完全不动
-    _currentRotateSpeed = Mathf.Max(newRotateSpeed, 0.1f);
 
-    if (showDebugLogs)
+    /// <summary>
+    /// 更新移动速度和转向速度（供外部调用）
+    /// </summary>
+    public void UpdateSpeedStats(float newMoveSpeed, float newRotateSpeed)
     {
-        Debug.Log($"速度更新 - 移动速度: {_currentMoveSpeed}, 转向速度: {_currentRotateSpeed}");
-    }
-}
+        _currentMoveSpeed = Mathf.Max(newMoveSpeed, 0.1f);
+        _currentRotateSpeed = Mathf.Max(newRotateSpeed, 0.1f);
 
-/// <summary>
-/// 处理鼠标左键冲刺输入
-/// </summary>
-private void HandleSprintInput()
-{
-    if (_isLeftMousePressed && !_isOnCooldown && !_isSprinting && haveDush)
+        if (showDebugLogs)
+        {
+            Debug.Log($"速度更新 - 移动速度: {_currentMoveSpeed}, 转向速度: {_currentRotateSpeed}");
+        }
+    }
+
+    /// <summary>
+    /// 处理冲刺输入逻辑
+    /// </summary>
+    private void HandleSprintInput()
     {
-        _isSprinting = true;
-        StartCoroutine(ApplySprint()); // 新增协程处理冲刺时效
+        if (_isSprintingInput && !_isOnCooldown && !_isSprinting && haveDush)
+        {
+            _isSprinting = true;
+            StartCoroutine(ApplySprint());
+        }
+        // 重置输入状态（避免持续触发）
+        _isSprintingInput = false;
     }
-    _isLeftMousePressed = false;
-}
 
-// 新增：冲刺协程（使用当前速度计算冲刺速度）
-private IEnumerator ApplySprint()
-{
-    float originalMoveSpeed = _currentMoveSpeed;
-    _currentMoveSpeed *= (float)sprintMultiplier; // 冲刺时基于当前速度放大
-    
-    yield return new WaitForSeconds((float)sprintDuration);
-    
-    _currentMoveSpeed = originalMoveSpeed; // 恢复原速度
-    _isSprinting = false;
-    _isOnCooldown = true; // 进入冷却
-}
+    /// <summary>
+    /// 冲刺效果协程
+    /// </summary>
+    private IEnumerator ApplySprint()
+    {
+        float originalMoveSpeed = _currentMoveSpeed;
+        _currentMoveSpeed *= (float)sprintMultiplier;
+        
+        yield return new WaitForSeconds((float)sprintDuration);
+        
+        _currentMoveSpeed = originalMoveSpeed;
+        _isSprinting = false;
+        _isOnCooldown = true;
+    }
 
-/// <summary>
-/// 绘制调试射线
-/// </summary>
-private void DrawDebugRay()
-{
+    /// <summary>
+    /// 绘制调试射线
+    /// </summary>
+    private void DrawDebugRay()
+    {
         Vector3 selfForward = _transform.forward;
         selfForward.y = 0;
         selfForward.Normalize();
@@ -225,35 +197,84 @@ private void DrawDebugRay()
         Debug.DrawRay(rayOrigin, selfForward * debugRayLength, debugRayColor);
     }
 
-    // 输入回调函数
-    void OnRotate(InputValue value) => _rotateInput = value.Get<Vector2>();
-
-    // 处理鼠标右键状态
-    void OnMove(InputValue value)
+    /// <summary>
+    /// 绑定InputManager事件（仅保留移动和冲刺）
+    /// </summary>
+    private void BindInputEvents()
     {
-        _isRightMouseHeld = value.isPressed;
-
-        if (showDebugLogs)
+        if (InputManager.Instance == null)
         {
-            Debug.Log($"OnMove触发 - 输入状态: {value.isPressed}");
+            Debug.LogError("InputManager 实例为空，无法绑定输入事件！");
+            return;
         }
+
+        InputManager.Instance.OnSpeedUpBool += OnSprintInput;
+        InputManager.Instance.OnMoveInput += OnMoveInput;  // 移动输入包含转向
+        InputManager.Instance.Up += HandleUp;
+        InputManager.Instance.Down += HandleDown;
     }
 
-    void OnSpeedUp(InputValue value) => _isLeftMousePressed = value.isPressed;
+    /// <summary>
+    /// 解除InputManager事件绑定（避免内存泄漏）
+    /// </summary>
+    private void OnDestroy()
+    {
+        if (InputManager.Instance == null) return;
+
+        InputManager.Instance.OnSpeedUpBool -= OnSprintInput;
+        InputManager.Instance.OnMoveInput -= OnMoveInput;
+        InputManager.Instance.Up -= HandleUp;
+        InputManager.Instance.Down -= HandleDown;
+    }
+
+    #region 输入事件处理
+    /// <summary>
+    /// 冲刺输入回调
+    /// </summary>
+    private void OnSprintInput(bool isPressed)
+    {
+        _isSprintingInput = isPressed;
+    }
 
     /// <summary>
-    /// 冲刺冷却提示
+    /// 移动输入回调（包含转向逻辑，X轴控制转向和横向移动）
+    /// </summary>
+    private void OnMoveInput(Vector2 input)
+    {
+        _moveInput = input;  // input.x控制转向和左右移动，input.y控制前后移动
+    }
+    private void HandleUp(float inputValue)
+    {
+        bool isPressed = inputValue > 0.5f;
+        if (isPressed != _isAscending)
+        {
+            _isAscending = isPressed;
+            if (showDebugLogs) Debug.Log(_isAscending ? "开始上浮" : "停止上浮");
+        }
+        if (_isAscending) _isDescending = false; // 互斥，避免同时上下
+    }
+
+    private void HandleDown(float inputValue)
+    {
+        bool isPressed = inputValue > 0.5f;
+        if (isPressed != _isDescending)
+        {
+            _isDescending = isPressed;
+            if (showDebugLogs) Debug.Log(_isDescending ? "开始下潜" : "停止下潜");
+        }
+        if (_isDescending) _isAscending = false; // 互斥，避免同时上下
+    }
+    #endregion
+
+    /// <summary>
+    /// 冲刺冷却UI提示
     /// </summary>
     private void OnGUI()
     {
         if (_isOnCooldown)
         {
-            // 冷却时间显示需要转换为float
             float remainingCooldown = (float)Mathf.Ceil((float)(sprintCooldown - _cooldownTimer));
             GUI.Label(new Rect(10, Screen.height - 30, 200, 20), $"冲刺冷却中: {remainingCooldown}s");
         }
-
-        // 显示当前右键状态（UI调试）
-        GUI.Label(new Rect(10, Screen.height - 60, 200, 20), $"右键按住: {_isRightMouseHeld}");
     }
 }
