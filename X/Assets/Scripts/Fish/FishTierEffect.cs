@@ -4,17 +4,19 @@ public class FishTierEffect : MonoBehaviour
 {
     // 鱼的技能数据（在Inspector拖拽配置）
     public SkillFishData fishData;
+    
     // 各挡位对应的光环预制件（代码自动加载，无需手动拖入）
     public GameObject[] tierPrefabs;
 
     // 缓存当前显示的光环
-    protected GameObject currentHalo;
+    public GameObject currentHalo;
+    
     public float scalePlus = 0.5f;
     // 光环在模型顶部的额外偏移量，可根据需要调整
     public float topOffset = 0.1f;
 
     // 定死特效预制体的路径（Resources文件夹下的路径，需确保FishEffects在Resources里）
-    private const string EffectPath = "FishEffects/";
+    protected const string EffectPath = "FishEffects/";
     // 按顺序定义特效名称，与“白、黄、紫、黑、红”对应
     private string[] effectNames = {
         "Area_circles_white 1",
@@ -26,6 +28,7 @@ public class FishTierEffect : MonoBehaviour
 
     public virtual void Start()
     {
+        BindEvent();
         // 自动加载特效到tierPrefabs数组
         LoadTierPrefabs();
 
@@ -36,7 +39,7 @@ public class FishTierEffect : MonoBehaviour
         AutoFitModelSize();
     }
 
-    private void LoadTierPrefabs()
+    protected virtual void LoadTierPrefabs()
     {
         tierPrefabs = new GameObject[effectNames.Length];
         for (int i = 0; i < effectNames.Length; i++)
@@ -52,6 +55,25 @@ public class FishTierEffect : MonoBehaviour
             tierPrefabs[i] = prefab;
         }
     }
+    private void BindEvent()
+    {
+        // 注册事件监听
+        FishEventSystem.OnPlayerTierChanged += OnPlayerTierUpdated;
+        // 初始更新一次显示状态
+        if (PlayerFishData.Instance != null)
+        UpdateEffectVisibility(PlayerFishData.Instance.GetCurrentTier());
+    }
+    private void OnDisable()
+    {
+        // 移除事件监听
+        FishEventSystem.OnPlayerTierChanged -= OnPlayerTierUpdated;
+    }
+    private void OnPlayerTierUpdated(FishTier newPlayerTier)
+    {
+        // 当玩家挡位变化时更新特效显示
+        UpdateEffectVisibility(newPlayerTier);
+    }
+
 
     // 根据挡位显示对应光环预制件
     public void ShowTierHalo(FishTier tier)
@@ -59,12 +81,19 @@ public class FishTierEffect : MonoBehaviour
         // 销毁之前的光环
         if (currentHalo != null) Destroy(currentHalo);
 
-        // 检查数组有效性
-        if (tierPrefabs == null || tierPrefabs.Length == 0)
+        if (tier == FishTier.White) // 假设White对应0挡位
         {
-            Debug.LogError("tierPrefabs数组未初始化或为空！");
+            currentHalo = null;
             return;
         }
+    
+
+    // 检查特效预制体
+    if (tierPrefabs == null || tierPrefabs.Length == 0)
+    {
+        Debug.LogError("tierPrefabs数组未初始化或为空！");
+        return;
+    }
 
         // 限制索引范围
         int tierIndex = Mathf.Clamp((int)tier, 0, tierPrefabs.Length - 1);
@@ -108,7 +137,16 @@ public class FishTierEffect : MonoBehaviour
             transform
         );
     }
-
+public void UpdateEffectVisibility(FishTier playerTier)
+{
+    // 0挡位特效本身就不存在，直接返回
+    if (fishData.fishTier == FishTier.White) return;
+    
+    if (currentHalo == null) return;
+    
+    // 只显示挡位不低于玩家当前挡位的特效
+    currentHalo.SetActive(fishData.fishTier > playerTier);
+}
     // 自动适配模型大小（修改预制件缩放）
     public virtual void AutoFitModelSize()
     {

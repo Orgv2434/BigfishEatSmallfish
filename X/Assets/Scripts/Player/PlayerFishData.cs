@@ -5,8 +5,9 @@ using DistantLands;
 
 public class PlayerFishData : MonoBehaviour
 {
+    public static PlayerFishData Instance { get; private set; }
     public SkillFishData fishData;
-    [Header("»ù´¡ÊôĞÔ")]
+    [Header("åŸºç¡€å±æ€§")]
     public float maxHealth = 100f;
     public float currentHealth;
     public int currentExp = 0;
@@ -15,18 +16,18 @@ public class PlayerFishData : MonoBehaviour
     public float currentSize;
     public float moveSpeed = 5f;
 
-    [Header("ÉúÃüÉèÖÃ")]
+    [Header("ç”Ÿå‘½è®¾ç½®")]
     public float healthLossRate = 1f;
     public float expToHealthRate = 0.2f;
 
-    [Header("¾­ÑéÉèÖÃ")]
+    [Header("ç»éªŒè®¾ç½®")]
     public float baseExpMultiplier = 0.5f;
     private float _currentExpMultiplier;
 
-    [Header("Éı¼¶ÉèÖÃ")]
+    [Header("å‡çº§è®¾ç½®")]
     public int[] expToNextTier = { 100, 300, 600, 1000 };
 
-    [Header("ÌåĞÍÓëËÙ¶ÈÉèÖÃ")]
+    [Header("ä½“å‹ä¸é€Ÿåº¦è®¾ç½®")]
     public float sizeIncreasePerTier = 0.5f;
     public float sizeIncreasePerExp = 0.001f;
     public float moveSpeedDecreasePerExp = 0.002f;
@@ -36,19 +37,29 @@ public class PlayerFishData : MonoBehaviour
     public float baseRotateSpeed = 90f;
     private float _currentRotateSpeed;
 
-    [Header("ÒıÓÃÅäÖÃ")]
+    [Header("å¼•ç”¨é…ç½®")]
     public ThirdPersonMove thirdPersonMove;
 
-    // ÊÂ¼şÍ¨Öª
+    // äº‹ä»¶é€šçŸ¥
     public Action<float> OnHealthChanged;
     public Action<int, int> OnExpChanged;
     public Action<FishTier> OnTierChanged;
+    
     public Action<float> OnSizeChanged;
     public Action<float> OnSpeedChanged;
 
-    // »¤¶Ü×´Ì¬
+    // æŠ¤ç›¾çŠ¶æ€
     public int _shieldCount = 0;
     private FishSkillSystem _skillSystem;
+    // å®šä¹‰æŒ¡ä½å˜åŒ–äº‹ä»¶ï¼ˆå‚æ•°ä¸ºæ–°æŒ¡ä½ï¼‰
+    public event Action<FishTier> OnTierUpgraded;
+    private void Awake()
+    {
+        if (Instance == null)
+            Instance = this;
+        else
+            Destroy(gameObject);
+    }
 
     private void Start()
     {
@@ -58,71 +69,71 @@ public class PlayerFishData : MonoBehaviour
         _currentRotateSpeed = baseRotateSpeed;
         _skillSystem = GetComponent<FishSkillSystem>();
 
-        // ³õÊ¼»¯ÒÆ¶¯ËÙ¶È
+        // åˆå§‹åŒ–ç§»åŠ¨é€Ÿåº¦
         if (thirdPersonMove != null)
             thirdPersonMove.UpdateSpeedStats(moveSpeed, _currentRotateSpeed);
         else
-            Debug.LogWarning("Î´¸³ÖµThirdPersonMove½Å±¾£¡ËÙ¶È¸üĞÂ½«Ê§Ğ§");
+            Debug.LogWarning("æœªèµ‹å€¼ThirdPersonMoveè„šæœ¬ï¼é€Ÿåº¦æ›´æ–°å°†å¤±æ•ˆ");
     }
 
     private void Update()
     {
-        // ËæÊ±¼ä¿ÛÑª£¨±£ÁôÔ­ÓĞÂß¼­£©
+        // éšæ—¶é—´æ‰£è¡€ï¼ˆä¿ç•™åŸæœ‰é€»è¾‘ï¼‰
         currentHealth = Mathf.Max(0, currentHealth - healthLossRate * Time.deltaTime);
         OnHealthChanged?.Invoke(currentHealth / maxHealth);
 
-        // ËÀÍö¼ì²â
+        // æ­»äº¡æ£€æµ‹
         if (currentHealth <= 0)
         {
-            Debug.Log("Íæ¼ÒÓãËÀÍö£¡");
+            Debug.Log("ç©å®¶é±¼æ­»äº¡ï¼");
             Destroy(gameObject);
         }
     }
 
-    // ¼ÓÑªÂß¼­£¨±£Áô£©
+    // åŠ è¡€é€»è¾‘ï¼ˆä¿ç•™ï¼‰
     public void GainHealth(float amount)
     {
         currentHealth = Mathf.Min(maxHealth, currentHealth + amount);
         OnHealthChanged?.Invoke(currentHealth / maxHealth);
     }
 
-    // ¼Ó¾­ÑéÂß¼­£¨±£Áô²¢ÓÅ»¯£©
+    // åŠ ç»éªŒé€»è¾‘ï¼ˆä¿ç•™å¹¶ä¼˜åŒ–ï¼‰
     public void GainExp(int baseExp)
     {
         int actualExp = Mathf.RoundToInt(baseExp * _currentExpMultiplier);
         currentExp += actualExp;
         
-        // ¾­ÑéÓë»ØÑªÍ¨Öª
+        // ç»éªŒä¸å›è¡€é€šçŸ¥
         OnExpChanged?.Invoke(currentExp, GetRequiredExpForNextTier());
         GainHealth(actualExp * expToHealthRate);
-        Debug.Log($"»ñµÃ¾­Ñé£º{actualExp}£¬»Ø¸´ÑªÁ¿£º{actualExp * expToHealthRate}");
+        Debug.Log($"è·å¾—ç»éªŒï¼š{actualExp}ï¼Œå›å¤è¡€é‡ï¼š{actualExp * expToHealthRate}");
         
-        // ÊµÊ±¸üĞÂÊôĞÔ
+        // å®æ—¶æ›´æ–°å±æ€§
         UpdateStatsByExp(actualExp);
         CheckTierUpgrade();
     }
 
-    // ¾­Ñé¸üĞÂÊôĞÔ£¨±£Áô£©
+    // ç»éªŒæ›´æ–°å±æ€§ï¼ˆä¿ç•™ï¼‰
     private void UpdateStatsByExp(int addedExp)
     {
-        // ÌåĞÍ¸üĞÂ
+        // ä½“å‹æ›´æ–°
         currentSize += addedExp * sizeIncreasePerExp;
         OnSizeChanged?.Invoke(currentSize);
 
-        // ËÙ¶È¸üĞÂ
+        // é€Ÿåº¦æ›´æ–°
         float totalMoveSpeedDecrease = currentExp * moveSpeedDecreasePerExp;
         float newMoveSpeed = Mathf.Max(moveSpeed - totalMoveSpeedDecrease, minMoveSpeed);
         float totalRotateDecrease = currentExp * rotateSpeedDecreasePerExp;
         _currentRotateSpeed = Mathf.Max(baseRotateSpeed - totalRotateDecrease, minRotateSpeed);
 
-        // Í¬²½ÒÆ¶¯½Å±¾ËÙ¶È
+        // åŒæ­¥ç§»åŠ¨è„šæœ¬é€Ÿåº¦
         if (thirdPersonMove != null)
             thirdPersonMove.UpdateSpeedStats(newMoveSpeed, _currentRotateSpeed);
         
         OnSpeedChanged?.Invoke(newMoveSpeed);
     }
 
-    // Éı¼¶¼ì²â£¨±£Áô£©
+    // å‡çº§æ£€æµ‹ï¼ˆä¿ç•™ï¼‰
     private void CheckTierUpgrade()
     {
         int tierIndex = (int)currentTier;
@@ -130,8 +141,9 @@ public class PlayerFishData : MonoBehaviour
         {
             tierIndex++;
             currentTier = (FishTier)tierIndex;
+             OnTierUpgraded?.Invoke(currentTier);
 
-            // Éı¼¶ÌØĞ§ÓëÊôĞÔÌáÉı
+            // å‡çº§ç‰¹æ•ˆä¸å±æ€§æå‡
             FishTierEffect tierEffect = GetComponent<FishTierEffect>();
             if (tierEffect != null)
             {
@@ -139,27 +151,33 @@ public class PlayerFishData : MonoBehaviour
                 tierEffect.AutoFitModelSize();
             }
 
-            // Éı¼¶ÊôĞÔ¼Ó³É
+            // å‡çº§å±æ€§åŠ æˆ
             currentSize = baseSize + (int)currentTier * sizeIncreasePerTier;
             moveSpeed += 0.5f;
             maxHealth += 50;
             currentHealth = Mathf.Min(maxHealth, currentHealth + 50);
 
-            // ÖØĞÂ¼ÆËãËÙ¶È£¨µÖÏûË¥¼õ£©
+            // é‡æ–°è®¡ç®—é€Ÿåº¦ï¼ˆæŠµæ¶ˆè¡°å‡ï¼‰
             float finalMoveSpeed = Mathf.Max(moveSpeed - currentExp * moveSpeedDecreasePerExp, minMoveSpeed);
             float finalRotateSpeed = Mathf.Max(_currentRotateSpeed, minRotateSpeed);
             thirdPersonMove?.UpdateSpeedStats(finalMoveSpeed, finalRotateSpeed);
 
-            // ÊÂ¼şÍ¨Öª
+            // äº‹ä»¶é€šçŸ¥
             OnSizeChanged?.Invoke(currentSize);
             OnSpeedChanged?.Invoke(finalMoveSpeed);
             OnTierChanged?.Invoke(currentTier);
+            FishEventSystem.BroadcastTierChanged(currentTier); 
+
             OnHealthChanged?.Invoke(currentHealth / maxHealth);
             HandleTierUpgrade();
         }
     }
-
-    // ºËĞÄĞŞ¸Ä£º³ÔÓãÂß¼­£¨Í¨ÖªÓãÈº¹ÜÀíÆ÷´¦ÀíÒÆ³ı+ÖØÉú£©
+    
+    public FishTier GetCurrentTier()
+    {
+        return currentTier;
+    }
+    // æ ¸å¿ƒä¿®æ”¹ï¼šåƒé±¼é€»è¾‘ï¼ˆé€šçŸ¥é±¼ç¾¤ç®¡ç†å™¨å¤„ç†ç§»é™¤+é‡ç”Ÿï¼‰
     public void HandleFishCollision(FishTierEffect otherFish)
     {
         if (otherFish == null) return;
@@ -168,44 +186,44 @@ public class PlayerFishData : MonoBehaviour
         int otherExp = otherFish.fishData.baseExpValue;
         string otherTag = otherFish.gameObject.tag;
 
-        // ±È×Ô¼º´óµÄÓã£º»¤¶ÜµÖÏû»òËÀÍö
+        // æ¯”è‡ªå·±å¤§çš„é±¼ï¼šæŠ¤ç›¾æŠµæ¶ˆæˆ–æ­»äº¡
         if (otherTier > currentTier)
         {
             if (!UseShield())
             {
                 currentHealth = 0;
-                Debug.Log("Íæ¼ÒÓã±»¸ü´óµ²Î»µÄÓã³Ôµô£¬ËÀÍö£¡");
+                Debug.Log("ç©å®¶é±¼è¢«æ›´å¤§æŒ¡ä½çš„é±¼åƒæ‰ï¼Œæ­»äº¡ï¼");
             }
             else
             {
-                Debug.Log("Íæ¼ÒÓãÊ¹ÓÃ»¤¶ÜµÖµ²ÁË¸ü´óµ²Î»ÓãµÄ¹¥»÷£¡");
+                Debug.Log("ç©å®¶é±¼ä½¿ç”¨æŠ¤ç›¾æŠµæŒ¡äº†æ›´å¤§æŒ¡ä½é±¼çš„æ”»å‡»ï¼");
             }
             return;
         }
 
-        // ±È×Ô¼ºĞ¡»òÍ¬µ²Î»µÄÓã£º³Ôµô²¢Í¨ÖªÓãÈºÖØÉú
+        // æ¯”è‡ªå·±å°æˆ–åŒæŒ¡ä½çš„é±¼ï¼šåƒæ‰å¹¶é€šçŸ¥é±¼ç¾¤é‡ç”Ÿ
         if (otherTier < currentTier || (otherTier == currentTier && otherTag != "head"))
         {
-            Debug.Log(otherTier < currentTier ? "³Ôµô¸üĞ¡µ²Î»µÄÓã" : "³ÔµôÍ¬µ²Î»ÓãµÄÎ²²¿/ÉíÌå");
+            Debug.Log(otherTier < currentTier ? "åƒæ‰æ›´å°æŒ¡ä½çš„é±¼" : "åƒæ‰åŒæŒ¡ä½é±¼çš„å°¾éƒ¨/èº«ä½“");
             
-            // ¹Ø¼üĞŞ¸Ä£º»ñÈ¡±»³ÔÓãËùÊôµÄÓãÈº¹ÜÀíÆ÷£¬Í¨ÖªÆä´¦ÀíÖØÉú
+            // å…³é”®ä¿®æ”¹ï¼šè·å–è¢«åƒé±¼æ‰€å±çš„é±¼ç¾¤ç®¡ç†å™¨ï¼Œé€šçŸ¥å…¶å¤„ç†é‡ç”Ÿ
             GlobalFlock fishFlock = otherFish.gameObject.transform.parent?.GetComponent<GlobalFlock>();
             if (fishFlock != null)
-                fishFlock.OnFishEaten(otherFish.gameObject); // Í¨ÖªÓãÈºÒÆ³ı+ÖØÉú
+                fishFlock.OnFishEaten(otherFish.gameObject); // é€šçŸ¥é±¼ç¾¤ç§»é™¤+é‡ç”Ÿ
             else
-                Destroy(otherFish.gameObject); // Òì³£Çé¿ö£ºÖ±½ÓÏú»Ù
+                Destroy(otherFish.gameObject); // å¼‚å¸¸æƒ…å†µï¼šç›´æ¥é”€æ¯
 
-            // »ñµÃ¾­ÑéÓë¼¼ÄÜ
+            // è·å¾—ç»éªŒä¸æŠ€èƒ½
             _skillSystem?.EatSkillFish(otherFish.fishData);
             GainExp(otherExp);
         }
         else if (otherTier == currentTier && otherTag == "head")
         {
-            Debug.Log("Åöµ½Í¬µ²Î»ÓãµÄÍ·²¿£¬ÎŞÊÓÅö×²£¡");
+            Debug.Log("ç¢°åˆ°åŒæŒ¡ä½é±¼çš„å¤´éƒ¨ï¼Œæ— è§†ç¢°æ’ï¼");
         }
     }
 
-    // ÒÔÏÂÎªÔ­ÓĞÂß¼­£¨±£Áô£©
+    // ä»¥ä¸‹ä¸ºåŸæœ‰é€»è¾‘ï¼ˆä¿ç•™ï¼‰
     public void SetTemporaryExpMultiplier(float multiplier, float duration)
     {
         StartCoroutine(ResetExpMultiplier(multiplier, duration));
@@ -248,6 +266,6 @@ public class PlayerFishData : MonoBehaviour
 
     public void HandleTierUpgrade()
     {
-        Debug.Log($"Íæ¼ÒÓãÉı¼¶µ½ {currentTier} µ²Î»£¡");
+        Debug.Log($"ç©å®¶é±¼å‡çº§åˆ° {currentTier} æŒ¡ä½ï¼");
     }
 }

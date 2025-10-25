@@ -394,7 +394,7 @@ public class SkillFishAI : MonoBehaviour
 
     private void Despawn()
     {
-        var spawner = GetComponentInParent<FishAreaManager>();
+        var spawner = GetComponentInParent<SkillFishGenerate>();
         if (spawner != null)
         {
             spawner.DespawnFish(gameObject);

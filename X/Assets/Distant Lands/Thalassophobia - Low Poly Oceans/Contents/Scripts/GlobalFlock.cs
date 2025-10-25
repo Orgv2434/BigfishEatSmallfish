@@ -42,6 +42,10 @@ namespace DistantLands
         public List<GameObject> fishPrefabsDirect = new List<GameObject>();
         [Tooltip("每个预制体的最大池容量（父类对象池限制）")]
         public int maxPoolSizePerPrefab = 5; // 新增：控制对象池最大容量
+        [Tooltip("玩家对象")]
+        public Transform player;
+        protected bool isPlayerAssigned = false;
+    
         #endregion
 
 
@@ -180,7 +184,24 @@ namespace DistantLands
             StartCoroutine(RespawnFishAfterDelay());
         }
         #endregion
+        #region 订阅游戏变化事件
+        private void OnEnable()
+        {
+            if (FishGameFlowManager.Instance != null)
+            {
+                FishGameFlowManager.Instance.OnGameStateChanged += OnGameStateChanged;
+            }
+        }
+    
 
+        private void OnDisable()
+        {
+            if (FishGameFlowManager.Instance != null)
+            {
+                FishGameFlowManager.Instance.OnGameStateChanged -= OnGameStateChanged;
+            }
+        }
+    #endregion
 
         #region 其他核心逻辑（复用并适配对象池）
         /// <summary>
@@ -208,7 +229,46 @@ namespace DistantLands
                 }
             }
         }
+        private void OnGameStateChanged(FishGameFlowManager.GameState newState)
+        {
+            switch (newState)
+            {
+                case FishGameFlowManager.GameState.GamePlaying:
+                    AssignPlayerReference();
+                    break;
+                case FishGameFlowManager.GameState.MainMenu:
+                case FishGameFlowManager.GameState.PrepareStage:
+                case FishGameFlowManager.GameState.GameOver:
+                    ResetPlayerReference();
+                    break;
+            }
+        }
 
+        protected virtual void AssignPlayerReference()
+        {
+            if (isPlayerAssigned) return;
+
+            if (FishGameFlowManager.Instance != null && FishGameFlowManager.Instance.playerFish != null)
+            {
+               
+                
+            }
+            else
+            {
+                Debug.LogWarning("[FishAreaManager] 游戏已开始，但未找到玩家对象！");
+            }
+        }
+        private void ResetPlayerReference()
+        {
+            if (isPlayerAssigned)
+            {
+                player = null;
+                isPlayerAssigned = false;
+                Debug.Log("[FishAreaManager] 已重置玩家引用");
+            }
+        }
+    
+    
         /// <summary>
         /// 加载预制体（与对象池关联）
         /// </summary>
