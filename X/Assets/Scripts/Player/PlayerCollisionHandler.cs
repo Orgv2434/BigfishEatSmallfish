@@ -1,46 +1,36 @@
 using UnityEngine;
 
-namespace YourNamespace // 可根据项目需求替换为实际命名空间
-{
+
+
     public class PlayerCollisionHandler : MonoBehaviour
     {
-        // 用于存储玩家鱼数据的组件引用
-        private PlayerFishData playerFishData;
+        private PlayerFishData _playerFishData;
 
-        /// <summary>
-        /// 初始化时获取 PlayerFishData 组件
-        /// </summary>
         private void Awake()
         {
-            playerFishData = GetComponent<PlayerFishData>();
-            if (playerFishData == null)
-            {
+            // 提前获取引用（避免每帧查找）
+            _playerFishData = GetComponent<PlayerFishData>();
+            if (_playerFishData == null)
                 Debug.LogError("当前对象上缺少 PlayerFishData 组件！请检查挂载对象。");
-            }
         }
 
-        /// <summary>
-        /// 触发进入事件：检测碰撞对象的父物体中是否有 Fish 组件
-        /// </summary>
-        /// <param name="other">碰撞到的对象</param>
+        // 仅在触发时执行逻辑（避免每帧检测）
         private void OnTriggerEnter(Collider other)
         {
-            Debug.Log($"检测到与 {other.gameObject.name} 的碰撞");
+            if (other == null || _playerFishData == null)
+                return;
 
-           
-            FishTierEffect otherFish = other.GetComponentInParent<FishTierEffect>();
+            // 优先查找鱼自身的FishTierEffect（优化查找逻辑）
+            FishTierEffect otherFish = other.GetComponent<FishTierEffect>();
+            // 未找到时再查父对象（兼容层级结构）
+            if (otherFish == null)
+                otherFish = other.GetComponentInParent<FishTierEffect>();
 
             if (otherFish != null)
             {
-                Debug.Log($"找到父物体上的 FishTierEffect 组件：{otherFish.gameObject.name}");
-                playerFishData?.HandleFishCollision(otherFish); // 安全调用碰撞处理逻辑
+                // Debug.Log($"检测到与 {otherFish.gameObject.name} 的碰撞");
+                _playerFishData.HandleFishCollision(otherFish); // 调用玩家吃鱼逻辑
             }
-            else
-            {
-                Debug.LogWarning($"未在 {other.gameObject.name} 的父物体中找到 FishTierEffect 组件");
-              otherFish = other.GetComponent<FishTierEffect>();
-                playerFishData?.HandleFishCollision(otherFish); // 安全调用碰撞处理逻辑
-            }
+            // 移除冗余的else Debug（减少日志开销，仅异常时输出）
         }
     }
-}

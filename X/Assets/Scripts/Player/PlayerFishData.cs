@@ -1,10 +1,10 @@
 using UnityEngine;
 using System;
 using System.Collections;
+using DistantLands;
 
 public class PlayerFishData : MonoBehaviour
 {
-    // 鱼的技能数据（在Inspector拖拽配置）
     public SkillFishData fishData;
     [Header("基础属性")]
     public float maxHealth = 100f;
@@ -14,39 +14,31 @@ public class PlayerFishData : MonoBehaviour
     public float baseSize = 1f;
     public float currentSize;
     public float moveSpeed = 5f;
-    
 
     [Header("生命设置")]
-    public float healthLossRate = 1f; // 每秒扣血量
-    [Tooltip("经验转血量的倍率（每点经验回复的血量）")]
-    public float expToHealthRate = 0.2f; // 新增：经验回血倍率
+    public float healthLossRate = 1f;
+    public float expToHealthRate = 0.2f;
 
     [Header("经验设置")]
-    public float baseExpMultiplier = 0.5f; // 基础经验倍率
+    public float baseExpMultiplier = 0.5f;
     private float _currentExpMultiplier;
 
-[Header("升级设置")]
-public int[] expToNextTier = { 100, 300, 600, 1000 }; // 各挡位升级所需经验
+    [Header("升级设置")]
+    public int[] expToNextTier = { 100, 300, 600, 1000 };
 
-    [Header("体型设置")]
+    [Header("体型与速度设置")]
     public float sizeIncreasePerTier = 0.5f;
-    [Tooltip("每1点经验增加的体型系数（控制增长幅度）")]
-public float sizeIncreasePerExp = 0.001f; // 每点经验增加的体型（可调整数值控制增长速度）
-// 新增：引用移动控制脚本（在Inspector拖拽赋值）
-public ThirdPersonMove thirdPersonMove;
+    public float sizeIncreasePerExp = 0.001f;
+    public float moveSpeedDecreasePerExp = 0.002f;
+    public float minMoveSpeed = 2f;
+    public float rotateSpeedDecreasePerExp = 0.01f;
+    public float minRotateSpeed = 1f;
+    public float baseRotateSpeed = 90f;
+    private float _currentRotateSpeed;
 
-[Header("速度衰减设置")]
-[Tooltip("每1点经验减少的移动速度系数")]
-public float moveSpeedDecreasePerExp = 0.002f; // 每点经验减少的移动速度
-[Tooltip("鱼的最小移动速度（防止速度过低）")]
-public float minMoveSpeed = 2f; // 移动速度下限
-[Tooltip("每1点经验减少的转向速度系数")]
-public float rotateSpeedDecreasePerExp = 0.01f; // 每点经验减少的转向速度
-[Tooltip("鱼的最小转向速度")]
-public float minRotateSpeed = 1f; // 转向速度下限
-[Tooltip("初始转向速度（与ThirdPersonMove的初始rotateSpeed一致）")]
-public float baseRotateSpeed = 90f; // 初始转向速度（需和ThirdPersonMove配置匹配）
-private float _currentRotateSpeed; // 当前实际转向速度
+    [Header("引用配置")]
+    public ThirdPersonMove thirdPersonMove;
+
     // 事件通知
     public Action<float> OnHealthChanged;
     public Action<int, int> OnExpChanged;
@@ -56,30 +48,26 @@ private float _currentRotateSpeed; // 当前实际转向速度
 
     // 护盾状态
     public int _shieldCount = 0;
-    FishSkillSystem skillSystem;
-    
+    private FishSkillSystem _skillSystem;
+
     private void Start()
     {
         currentHealth = maxHealth;
         currentSize = baseSize;
         _currentExpMultiplier = baseExpMultiplier;
-        skillSystem = GetComponent<FishSkillSystem>();
-            // 新增：初始化转向速度，绑定ThirdPersonMove初始速度
-    _currentRotateSpeed = baseRotateSpeed;
-    if (thirdPersonMove != null)
-    {
-        // 初始化ThirdPersonMove的速度（确保初始状态一致）
-        thirdPersonMove.UpdateSpeedStats(moveSpeed, _currentRotateSpeed);
-    }
-    else
-    {
-        Debug.LogWarning("未赋值ThirdPersonMove脚本！速度更新将失效");
-    }
+        _currentRotateSpeed = baseRotateSpeed;
+        _skillSystem = GetComponent<FishSkillSystem>();
+
+        // 初始化移动速度
+        if (thirdPersonMove != null)
+            thirdPersonMove.UpdateSpeedStats(moveSpeed, _currentRotateSpeed);
+        else
+            Debug.LogWarning("未赋值ThirdPersonMove脚本！速度更新将失效");
     }
 
     private void Update()
     {
-        // 随时间扣血
+        // 随时间扣血（保留原有逻辑）
         currentHealth = Mathf.Max(0, currentHealth - healthLossRate * Time.deltaTime);
         OnHealthChanged?.Invoke(currentHealth / maxHealth);
 
@@ -87,102 +75,137 @@ private float _currentRotateSpeed; // 当前实际转向速度
         if (currentHealth <= 0)
         {
             Debug.Log("玩家鱼死亡！");
-            // 可扩展死亡逻辑，比如触发游戏结束事件等
+            Destroy(gameObject);
         }
     }
 
-    // 加血
+    // 加血逻辑（保留）
     public void GainHealth(float amount)
     {
         currentHealth = Mathf.Min(maxHealth, currentHealth + amount);
         OnHealthChanged?.Invoke(currentHealth / maxHealth);
     }
 
-    // 加经验（新增：同时计算回血）
+    // 加经验逻辑（保留并优化）
     public void GainExp(int baseExp)
     {
         int actualExp = Mathf.RoundToInt(baseExp * _currentExpMultiplier);
         currentExp += actualExp;
+        
+        // 经验与回血通知
         OnExpChanged?.Invoke(currentExp, GetRequiredExpForNextTier());
+        GainHealth(actualExp * expToHealthRate);
+        Debug.Log($"获得经验：{actualExp}，回复血量：{actualExp * expToHealthRate}");
+        
+        // 实时更新属性
+        UpdateStatsByExp(actualExp);
         CheckTierUpgrade();
-
-        // 新增：根据获得的实际经验值回复血量
-        float healthRecover = actualExp * expToHealthRate;
-        GainHealth(healthRecover);
-        Debug.Log($"获得经验：{actualExp}，回复血量：{healthRecover}");
-        
-    // 新增：每点经验实时修改体型、移动速度、转向速度
-    UpdateStatsByExp(actualExp);
-    }
-/// <summary>
-/// 根据新增经验实时更新体型、速度属性
-/// </summary>
-/// <param name="addedExp">本次新增的经验值</param>
-private void UpdateStatsByExp(int addedExp)
-{
-    // 2. 移动速度衰减：基于当前总经验计算（累计衰减）
-    float totalMoveSpeedDecrease = currentExp * moveSpeedDecreasePerExp;
-    float newMoveSpeed = moveSpeed - totalMoveSpeedDecrease;
-    newMoveSpeed = Mathf.Max(newMoveSpeed, minMoveSpeed); // 限制最小值
-
-    // 3. 转向速度衰减：基于当前总经验计算（累计衰减）
-    float totalRotateSpeedDecrease = currentExp * rotateSpeedDecreasePerExp;
-    _currentRotateSpeed = baseRotateSpeed - totalRotateSpeedDecrease;
-    _currentRotateSpeed = Mathf.Max(_currentRotateSpeed, minRotateSpeed); // 限制最小值
-
-    // 4. 调用ThirdPersonMove的速度更新方法（同步速度变化）
-    if (thirdPersonMove != null)
-    {
-        thirdPersonMove.UpdateSpeedStats(newMoveSpeed, _currentRotateSpeed);
     }
 
-    // 触发速度变化事件（原有逻辑保留）
-    OnSpeedChanged?.Invoke(newMoveSpeed);
-
-}
-    // 检查升级
-private void CheckTierUpgrade()
-{
-    int tierIndex = (int)currentTier;
-    while (tierIndex < expToNextTier.Length && currentExp >= expToNextTier[tierIndex])
+    // 经验更新属性（保留）
+    private void UpdateStatsByExp(int addedExp)
     {
-        tierIndex++;
-        currentTier = (FishTier)tierIndex;
-
-        // 新增：触发FishTierEffect的升级特效更新（获取当前物体上的FishTierEffect组件）
-        FishTierEffect fishTierEffect = GetComponent<FishTierEffect>();
-        if (fishTierEffect != null)
-        {
-            fishTierEffect.ShowTierHalo(currentTier); // 调用特效类的更新光环方法
-            fishTierEffect.AutoFitModelSize(); // 重新适配光环大小（因体型变化）
-        }
-
-        // 升级属性提升（保留原有逻辑，可根据需要调整）
-        currentSize = baseSize + (int)currentTier * sizeIncreasePerTier;
-        moveSpeed += 0.5f;
-        maxHealth += 50;
-            currentHealth = Mathf.Min(maxHealth, currentHealth + 50);
-        
-                // 新增：重新计算升级后的实际速度（抵消累计衰减）
-        float totalMoveSpeedDecrease = currentExp * moveSpeedDecreasePerExp;
-        float finalMoveSpeed = Mathf.Max(moveSpeed - totalMoveSpeedDecrease, minMoveSpeed);
-        float finalRotateSpeed = Mathf.Max(_currentRotateSpeed - totalMoveSpeedDecrease, minRotateSpeed);
-
-        // 同步更新ThirdPersonMove的速度
-        if (thirdPersonMove != null)
-        {
-            thirdPersonMove.UpdateSpeedStats(finalMoveSpeed, finalRotateSpeed);
-        }
-
-        // 触发事件（原有逻辑不变）
+        // 体型更新
+        currentSize += addedExp * sizeIncreasePerExp;
         OnSizeChanged?.Invoke(currentSize);
-        OnSpeedChanged?.Invoke(moveSpeed);
-        OnTierChanged?.Invoke(currentTier);
-        OnHealthChanged?.Invoke(currentHealth / maxHealth);
-    }
-}
 
-    // 临时经验倍率
+        // 速度更新
+        float totalMoveSpeedDecrease = currentExp * moveSpeedDecreasePerExp;
+        float newMoveSpeed = Mathf.Max(moveSpeed - totalMoveSpeedDecrease, minMoveSpeed);
+        float totalRotateDecrease = currentExp * rotateSpeedDecreasePerExp;
+        _currentRotateSpeed = Mathf.Max(baseRotateSpeed - totalRotateDecrease, minRotateSpeed);
+
+        // 同步移动脚本速度
+        if (thirdPersonMove != null)
+            thirdPersonMove.UpdateSpeedStats(newMoveSpeed, _currentRotateSpeed);
+        
+        OnSpeedChanged?.Invoke(newMoveSpeed);
+    }
+
+    // 升级检测（保留）
+    private void CheckTierUpgrade()
+    {
+        int tierIndex = (int)currentTier;
+        while (tierIndex < expToNextTier.Length && currentExp >= expToNextTier[tierIndex])
+        {
+            tierIndex++;
+            currentTier = (FishTier)tierIndex;
+
+            // 升级特效与属性提升
+            FishTierEffect tierEffect = GetComponent<FishTierEffect>();
+            if (tierEffect != null)
+            {
+                tierEffect.ShowTierHalo(currentTier);
+                tierEffect.AutoFitModelSize();
+            }
+
+            // 升级属性加成
+            currentSize = baseSize + (int)currentTier * sizeIncreasePerTier;
+            moveSpeed += 0.5f;
+            maxHealth += 50;
+            currentHealth = Mathf.Min(maxHealth, currentHealth + 50);
+
+            // 重新计算速度（抵消衰减）
+            float finalMoveSpeed = Mathf.Max(moveSpeed - currentExp * moveSpeedDecreasePerExp, minMoveSpeed);
+            float finalRotateSpeed = Mathf.Max(_currentRotateSpeed, minRotateSpeed);
+            thirdPersonMove?.UpdateSpeedStats(finalMoveSpeed, finalRotateSpeed);
+
+            // 事件通知
+            OnSizeChanged?.Invoke(currentSize);
+            OnSpeedChanged?.Invoke(finalMoveSpeed);
+            OnTierChanged?.Invoke(currentTier);
+            OnHealthChanged?.Invoke(currentHealth / maxHealth);
+            HandleTierUpgrade();
+        }
+    }
+
+    // 核心修改：吃鱼逻辑（通知鱼群管理器处理移除+重生）
+    public void HandleFishCollision(FishTierEffect otherFish)
+    {
+        if (otherFish == null) return;
+
+        FishTier otherTier = otherFish.fishData.fishTier;
+        int otherExp = otherFish.fishData.baseExpValue;
+        string otherTag = otherFish.gameObject.tag;
+
+        // 比自己大的鱼：护盾抵消或死亡
+        if (otherTier > currentTier)
+        {
+            if (!UseShield())
+            {
+                currentHealth = 0;
+                Debug.Log("玩家鱼被更大挡位的鱼吃掉，死亡！");
+            }
+            else
+            {
+                Debug.Log("玩家鱼使用护盾抵挡了更大挡位鱼的攻击！");
+            }
+            return;
+        }
+
+        // 比自己小或同挡位的鱼：吃掉并通知鱼群重生
+        if (otherTier < currentTier || (otherTier == currentTier && otherTag != "head"))
+        {
+            Debug.Log(otherTier < currentTier ? "吃掉更小挡位的鱼" : "吃掉同挡位鱼的尾部/身体");
+            
+            // 关键修改：获取被吃鱼所属的鱼群管理器，通知其处理重生
+            GlobalFlock fishFlock = otherFish.gameObject.transform.parent?.GetComponent<GlobalFlock>();
+            if (fishFlock != null)
+                fishFlock.OnFishEaten(otherFish.gameObject); // 通知鱼群移除+重生
+            else
+                Destroy(otherFish.gameObject); // 异常情况：直接销毁
+
+            // 获得经验与技能
+            _skillSystem?.EatSkillFish(otherFish.fishData);
+            GainExp(otherExp);
+        }
+        else if (otherTier == currentTier && otherTag == "head")
+        {
+            Debug.Log("碰到同挡位鱼的头部，无视碰撞！");
+        }
+    }
+
+    // 以下为原有逻辑（保留）
     public void SetTemporaryExpMultiplier(float multiplier, float duration)
     {
         StartCoroutine(ResetExpMultiplier(multiplier, duration));
@@ -195,7 +218,6 @@ private void CheckTierUpgrade()
         _currentExpMultiplier = baseExpMultiplier;
     }
 
-    // 临时外观挡位（伪装技能用）
     public void SetTemporaryVisualTier(FishTier visualTier, float duration)
     {
         StartCoroutine(ResetVisualTier(visualTier, duration));
@@ -206,11 +228,7 @@ private void CheckTierUpgrade()
         yield return new WaitForSeconds(duration);
     }
 
-    // 护盾管理
-    public void AddShield(int count = 1)
-    {
-        _shieldCount += count;
-    }
+    public void AddShield(int count = 1) => _shieldCount += count;
 
     public bool UseShield()
     {
@@ -222,68 +240,14 @@ private void CheckTierUpgrade()
         return false;
     }
 
-    // 获取下一等级所需经验
     public int GetRequiredExpForNextTier()
     {
         int tierIndex = (int)currentTier;
         return tierIndex < expToNextTier.Length ? expToNextTier[tierIndex] : 0;
     }
-    // 处理玩家升级
+
     public void HandleTierUpgrade()
     {
-        // 这里可以添加升级时的特效、音效等
         Debug.Log($"玩家鱼升级到 {currentTier} 挡位！");
     }
-    // 处理与其他鱼的碰撞逻辑
-    public void HandleFishCollision(FishTierEffect otherFish)
-    {
-        FishTier otherFishTier = otherFish.fishData.fishTier;
-        int otherFishExpValue = otherFish.fishData.baseExpValue;
-        string otherFishTag = otherFish.gameObject.tag;
-        if (otherFishTier > currentTier)
-        {
-            // 碰到比自己挡位大的鱼
-            if (!UseShield())
-            {
-                // 没有护盾，死亡
-                currentHealth = 0;
-                Debug.Log("玩家鱼被更大挡位的鱼吃掉，死亡！");
-                Destroy(gameObject);
-            }
-            else
-            {
-                Debug.Log("玩家鱼使用护盾抵挡了更大挡位鱼的攻击！");
-            }
-        }
-        else if (otherFishTier < currentTier)
-        {
-
-            Debug.Log("玩家鱼吃掉更小挡位的鱼，获得经验！");
-            Destroy(otherFish.gameObject);
-            skillSystem.EatSkillFish(otherFish.fishData);
-        }
-        else
-        {
-            // 同挡位的鱼，检测tag
-            if (otherFishTag == "tail")
-            {
-                Debug.Log("玩家鱼吃掉同挡位鱼的尾部，获得经验！");
-                Destroy(otherFish.gameObject);
-                skillSystem.EatSkillFish(otherFish.fishData);
-            }
-            else if (otherFishTag == "head")
-            {
-                // 是head，无视
-                Debug.Log("玩家鱼碰到同挡位鱼的头部，无视该碰撞！");
-            }
-            else
-            {
-                Debug.Log("吃到");
-                skillSystem.EatSkillFish(otherFish.fishData);
-                Destroy(otherFish.gameObject);
-
-            }
-        }
-    }
-
 }

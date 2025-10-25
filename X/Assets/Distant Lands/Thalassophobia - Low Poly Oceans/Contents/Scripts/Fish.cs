@@ -24,13 +24,12 @@ namespace DistantLands
         {
             if (flock == null) return;
 
-            ApplyTankBoundary();
+            ApplyTankBoundary(); // 检查是否超出活动范围
 
             if (turning)
             {
-                if (flock.target == null) return;
-
-                Vector3 direction = flock.target.transform.position + Vector3.up * Random.Range(-2, 2) - transform.position;
+                // 转向逻辑：以父类位置为中心调整方向
+                Vector3 direction = flock.transform.position + Vector3.up * Random.Range(-2, 2) - transform.position;
                 transform.rotation = Quaternion.Slerp(
                     transform.rotation,
                     Quaternion.LookRotation(direction),
@@ -41,27 +40,28 @@ namespace DistantLands
             {
                 if (Random.Range(0, performance + 1) < 1)
                 {
-                    ApplyRules();
+                    ApplyRules(); // 应用鱼群规则
                 }
             }
 
             transform.Translate(0, 0, Time.deltaTime * speed);
         }
 
+        /// <summary>
+        /// 检查是否超出父类定义的活动范围（以父类位置为中心）
+        /// </summary>
         void ApplyTankBoundary()
         {
-            if (flock == null || flock.target == null) return;
+            if (flock == null) return;
 
-            if (Vector3.Distance(transform.position, flock.target.transform.position) >= flock.wanderSize)
-            {
-                turning = true;
-            }
-            else
-            {
-                turning = false;
-            }
+            // 用父类自身位置作为活动中心，替代原target
+            float distanceFromCenter = Vector3.Distance(transform.position, flock.transform.position);
+            turning = distanceFromCenter >= flock.wanderSize; // 超出范围则需要转向
         }
 
+        /// <summary>
+        /// 应用鱼群聚集、避障等规则（以父类位置为参考）
+        /// </summary>
         void ApplyRules()
         {
             if (flock == null || flock.allFish == null) return;
@@ -69,11 +69,11 @@ namespace DistantLands
             GameObject[] gos = flock.allFish.ToArray();
             speed = Random.Range(0.5f, 1.5f) * averageSpeed;
 
-            if (flock.target == null) return;
-            Vector3 vCenter = flock.target.transform.position;
+            // 以父类位置作为群体中心参考点（替代原target）
+            Vector3 vCenter = flock.transform.position; 
             Vector3 vAvoid = Vector3.zero;
             float gSpeed = 0;
-            Vector3 goalPos = flock.target.transform.position;
+            Vector3 goalPos = flock.transform.position; // 目标点改为父类位置
 
             int groupSize = 0;
 
@@ -89,25 +89,27 @@ namespace DistantLands
 
                     if (dist < 0.75f)
                     {
-                        vAvoid += (transform.position - go.transform.position);
+                        vAvoid += (transform.position - go.transform.position); // 避障逻辑
                     }
 
                     Fish anotherFish = go.GetComponent<Fish>();
                     if (anotherFish != null)
                     {
-                        gSpeed += anotherFish.speed;
+                        gSpeed += anotherFish.speed; // 平均速度计算
                     }
                 }
             }
 
             if (groupSize > 0)
             {
+                // 群体中心 = 平均位置 + 向父类中心的偏移
                 vCenter = vCenter / groupSize + (goalPos - transform.position);
-                speed = gSpeed / groupSize;
+                speed = gSpeed / groupSize; // 同步群体速度
 
                 Vector3 direction = (vCenter + vAvoid) - transform.position;
                 if (direction != Vector3.zero)
                 {
+                    // 平滑转向群体目标方向
                     transform.rotation = Quaternion.Slerp(
                         transform.rotation,
                         Quaternion.LookRotation(direction),
@@ -117,15 +119,20 @@ namespace DistantLands
             }
         }
 
+        /// <summary>
+        /// 计算转向速度（与移动速度关联）
+        /// </summary>
         float TurnSpeed()
         {
             return Random.Range(0.2f, 0.4f) * speed;
         }
 
-        // 新增：鱼被销毁时从鱼群列表移除自身
+        /// <summary>
+        /// 鱼被销毁时从鱼群列表移除自身（避免空引用）
+        /// </summary>
         void OnDestroy()
         {
-            if (flock != null && flock.allFish != null)
+            if (flock != null && flock.allFish != null && flock.allFish.Contains(gameObject))
             {
                 flock.allFish.Remove(gameObject);
             }
