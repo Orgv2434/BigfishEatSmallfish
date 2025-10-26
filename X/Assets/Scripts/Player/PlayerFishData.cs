@@ -102,11 +102,20 @@ public class PlayerFishData : MonoBehaviour
     {
         int actualExp = Mathf.RoundToInt(baseExp * _currentExpMultiplier);
         currentExp += actualExp;
-        
+
         // 经验与回血通知
         OnExpChanged?.Invoke(currentExp, GetRequiredExpForNextTier());
-        GainHealth(actualExp * expToHealthRate);
-        Debug.Log($"获得经验：{actualExp}，回复血量：{actualExp * expToHealthRate}");
+          float restoredHealth = actualExp * expToHealthRate;
+        GainHealth(restoredHealth);
+        Debug.Log($"获得经验：{actualExp}，回复血量：{restoredHealth}");
+
+        // 屏幕特效
+         string coloredText = 
+        $"<color=yellow>+{actualExp} Exp</color>  " +  // 经验部分（黄色）
+        $"<color=green>+{restoredHealth} HP</color>"; // 血量部分（红色）
+        
+        // 调用自定义提示方法，传入拼接好的富文本
+        ExpPopupManager.Instance.ShowCustomPopup(transform.position, coloredText, Color.white); 
         
         // 实时更新属性
         UpdateStatsByExp(actualExp);
@@ -206,16 +215,16 @@ public class PlayerFishData : MonoBehaviour
         {
             Debug.Log(otherTier < currentTier ? "吃掉更小挡位的鱼" : "吃掉同挡位鱼的尾部/身体");
             
-            // 关键修改：获取被吃鱼所属的鱼群管理器，通知其处理重生
             GlobalFlock fishFlock = otherFish.gameObject.transform.parent?.GetComponent<GlobalFlock>();
             if (fishFlock != null)
-                fishFlock.OnFishEaten(otherFish.gameObject); // 通知鱼群移除+重生
+                fishFlock.OnFishEaten(otherFish.gameObject); 
             else
                 Destroy(otherFish.gameObject); // 异常情况：直接销毁
 
             // 获得经验与技能
             _skillSystem?.EatSkillFish(otherFish.fishData);
             GainExp(otherExp);
+
         }
         else if (otherTier == currentTier && otherTag == "head")
         {

@@ -28,9 +28,8 @@ using UnityEngine;
 
             if (otherFish != null)
             {
-                // Debug.Log($"检测到与 {otherFish.gameObject.name} 的碰撞");
-                _playerFishData.HandleFishCollision(otherFish); // 调用玩家吃鱼逻辑
+            // Debug.Log($"检测到与 {otherFish.gameObject.name} 的碰撞");
+            _playerFishData.HandleFishCollision(otherFish); // 调用玩家吃鱼逻辑
             }
-            // 移除冗余的else Debug（减少日志开销，仅异常时输出）
         }
     }
