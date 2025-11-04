@@ -253,7 +253,7 @@
       "url": "https://packages.unity.cn"
     },
     "com.unity.textmeshpro": {
-      "version": "3.0.7",
+      "version": "3.0.9",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -293,11 +293,22 @@
         "com.unity.modules.imgui": "1.0.0"
       }
     },
-    "com.unity.vast.tripoforunity": {
-      "version": "file:com.unity.vast.tripoforunity@1.0.1",
+    "com.unity.visualscripting": {
+      "version": "1.9.4",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {
+        "com.unity.ugui": "1.0.0",
+        "com.unity.modules.jsonserialize": "1.0.0"
+      },
+      "url": "https://packages.unity.cn"
+    },
+    "com.vastai3d.vast.tripoforunity": {
+      "version": "file:com.unity.vast.tripoforunity@1.1.0",
       "depth": 0,
       "source": "embedded",
       "dependencies": {
+        "com.unity.editorcoroutines": "1.0.0",
         "com.unity.cloud.gltfast": "6.8.0",
         "com.unity.modules.jsonserialize": "1.0.0",
         "com.unity.modules.unitywebrequest": "1.0.0",
@@ -308,16 +319,6 @@
         "com.unity.burst": "1.8.4",
         "com.unity.collections": "1.5.1"
       }
-    },
-    "com.unity.visualscripting": {
-      "version": "1.9.4",
-      "depth": 0,
-      "source": "registry",
-      "dependencies": {
-        "com.unity.ugui": "1.0.0",
-        "com.unity.modules.jsonserialize": "1.0.0"
-      },
-      "url": "https://packages.unity.cn"
     },
     "com.unity.modules.ai": {
       "version": "1.0.0",
