@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// 3D大鱼吃小鱼 游戏流程总控制器（单例场景+AI画板版）
@@ -72,12 +73,15 @@ public class FishGameFlowManager : MonoBehaviour
     #region 初始化
     private void Awake()
     {
-        if (Instance != null && Instance != this)
+        if (Instance == null)
         {
-            Destroy(gameObject);
-            return;
+            Instance = this;
+            DontDestroyOnLoad(gameObject); // 确保在场景切换时不被销毁
         }
-        Instance = this;
+        else
+        {
+            Destroy(gameObject); // 如果已有实例，销毁重复的实例
+        }
     }
 
     private void Start()
@@ -119,7 +123,7 @@ public class FishGameFlowManager : MonoBehaviour
                 mainMenuUI.SetActive(false);
                 break;
             case GameState.PrepareStage:
-                prepareStageUI.SetActive(false);
+                ScreenEffects.Instance.StartCoroutine(ScreenEffects.Instance.LoadScene(0)); // 返回主菜单场景
                 break;
             case GameState.GamePlaying:
                 inGameUI.SetActive(false);
@@ -147,11 +151,8 @@ public class FishGameFlowManager : MonoBehaviour
                 
                 break;
             case GameState.PrepareStage:
-                prepareStageUI.SetActive(true);
-                drawingBoard.SetActive(true);
-                imagePreview.gameObject.SetActive(false);
-                modelPreview.SetActive(false);
-                btnEnterGame.gameObject.SetActive(false);
+                ScreenEffects.Instance.StartCoroutine(ScreenEffects.Instance.LoadScene(1)); // 加载准备场景
+
                 break;
             case GameState.GamePlaying:
                 inGameUI.SetActive(true);
@@ -346,7 +347,7 @@ public class FishGameFlowManager : MonoBehaviour
 
     #region 暂停功能
     public void PauseGame(bool isPaused)
-    {   
+    {
         if (isPaused && CurrentState == GameState.GamePlaying)
         {
             SwitchToState(GameState.GamePaused);
@@ -354,4 +355,5 @@ public class FishGameFlowManager : MonoBehaviour
         }
     }
     #endregion
+    
 }
