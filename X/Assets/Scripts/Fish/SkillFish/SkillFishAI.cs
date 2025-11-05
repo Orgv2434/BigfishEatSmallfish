@@ -394,7 +394,7 @@ public class SkillFishAI : MonoBehaviour
 
     private void Despawn()
     {
-        var spawner = GetComponentInParent<SkillFishGenerate>();
+        var spawner = GetComponentInParent<SkillFishManager>();
         if (spawner != null)
         {
             spawner.DespawnFish(gameObject);
@@ -403,9 +403,8 @@ public class SkillFishAI : MonoBehaviour
         {
             Destroy(gameObject);
         }
+    
     }
-
-
     // ==========================================
     // Gizmos：在Scene视图绘制球形区域（方便调试）
     // ==========================================

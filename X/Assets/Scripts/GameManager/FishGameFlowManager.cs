@@ -26,6 +26,12 @@ public class FishGameFlowManager : MonoBehaviour
     public event GameStateChanged OnGameStateChanged;
     #endregion
 
+    #region 测试设置
+    [Header("=== 测试设置 ===")]
+    [Tooltip("启用调试模式，直接进入游戏")]
+    public bool isDebugMode = false; // 调试模式开关
+    #endregion
+
     #region 外部引用
     [Header("玩家出生点")]
     public Transform playerSpawnPoint;
@@ -123,6 +129,10 @@ public class FishGameFlowManager : MonoBehaviour
                 mainMenuUI.SetActive(false);
                 break;
             case GameState.PrepareStage:
+            if (isDebugMode)
+                {
+                    break;
+                }
                 ScreenEffects.Instance.StartCoroutine(ScreenEffects.Instance.LoadScene(0)); // 返回主菜单场景
                 break;
             case GameState.GamePlaying:
@@ -151,8 +161,14 @@ public class FishGameFlowManager : MonoBehaviour
                 
                 break;
             case GameState.PrepareStage:
+                if(isDebugMode)
+                {
+                    // 调试模式：直接创建玩家并进入游戏
+                    CreateNewPlayerFish();
+                    SwitchToState(GameState.GamePlaying);
+                    return;
+                }
                 ScreenEffects.Instance.StartCoroutine(ScreenEffects.Instance.LoadScene(1)); // 加载准备场景
-
                 break;
             case GameState.GamePlaying:
                 inGameUI.SetActive(true);
