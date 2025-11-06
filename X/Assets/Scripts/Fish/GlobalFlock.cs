@@ -90,22 +90,8 @@ namespace DistantLands
         
         [Tooltip("鱼群-鱼列表映射（键：鱼群名称，值：该鱼群包含的鱼）")]
         protected Dictionary<string, List<GameObject>> schoolFishMap = new Dictionary<string, List<GameObject>>();
-        
-        [Tooltip("单例实例")]
-        public static GlobalFlock Instance { get; private set; }
-        #endregion
 
-        protected virtual void Awake()
-        {
-            if (Instance != null && Instance != this)
-            {
-                Destroy(gameObject);
-                return;
-            }
-            Instance = this;
-            LoadFishPrefabs();
-            InitializeObjectPools();
-        }
+        #endregion
 
         protected virtual void Start()
         {

@@ -18,6 +18,22 @@ public class SkillFishManager : GlobalFlock
     private List<SkillFishAI> activeFishes = new List<SkillFishAI>();
     private float spawnTimer;
 
+    [Tooltip("单例实例")] 
+    public static SkillFishManager Instance { get; private set; }
+
+    protected virtual void Awake()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        Instance = this;
+        LoadFishPrefabs();
+        InitializeObjectPools();
+    }
+
+
     #region 生命周期
     protected override void Start()
     {
@@ -57,7 +73,6 @@ public class SkillFishManager : GlobalFlock
             yield return new WaitForSeconds(0.2f);
         }
     }
-
     private void UpdateSpawnLogic()
     {
         spawnTimer += Time.deltaTime;

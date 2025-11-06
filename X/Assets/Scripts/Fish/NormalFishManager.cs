@@ -11,7 +11,23 @@ public class NormalFishManager : GlobalFlock
     public float moveSpeed = 2f;
     public float rotationSpeed = 5f;
 
+    [Tooltip("单例实例")]
+    public static NormalFishManager Instance { get; private set; }
+
+
     #region 生命周期
+    protected virtual void Awake()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        Instance = this;
+        LoadFishPrefabs();
+        InitializeObjectPools();
+    }
+        
     protected override void Start()
     {
         base.Start();
@@ -40,7 +56,7 @@ public class NormalFishManager : GlobalFlock
     {
         // 普通鱼AI组件
         Fish fishAI = fish.GetComponent<Fish>() ?? fish.AddComponent<Fish>();
-        fishAI.flock = this;
+        fishAI.flock = setting;
     }
 
     protected override void ResetFishSpecificComponents(GameObject fish, SkillFishData data, FishSchoolSetting setting)

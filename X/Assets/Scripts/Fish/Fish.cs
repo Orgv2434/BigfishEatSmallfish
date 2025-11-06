@@ -11,7 +11,7 @@ namespace DistantLands
         Vector3 averagePosition;
         float neighborDistance = 3.0f;
         public int performance = 5;
-        [HideInInspector] public GlobalFlock flock;
+        public FishSchoolSetting flock;
 
         bool turning = false;
 
@@ -29,7 +29,7 @@ namespace DistantLands
             if (turning)
             {
                 // 转向逻辑：以父类位置为中心调整方向
-                Vector3 direction = flock.transform.position + Vector3.up * Random.Range(-2, 2) - transform.position;
+                Vector3 direction = flock.schoolParent.transform.position + Vector3.up * Random.Range(-2, 2) - transform.position;
                 transform.rotation = Quaternion.Slerp(
                     transform.rotation,
                     Quaternion.LookRotation(direction),
@@ -55,7 +55,7 @@ namespace DistantLands
             if (flock == null) return;
 
             // 用父类自身位置作为活动中心，替代原target
-            float distanceFromCenter = Vector3.Distance(transform.position, flock.transform.position);
+            float distanceFromCenter = Vector3.Distance(transform.position, flock.schoolParent.transform.position);
             turning = distanceFromCenter >= flock.wanderSize; // 超出范围则需要转向
         }
 
@@ -64,16 +64,16 @@ namespace DistantLands
         /// </summary>
         void ApplyRules()
         {
-            if (flock == null || flock.allFish == null) return;
+            if (flock == null || flock.schoolFishPrefabs == null) return;
 
-            GameObject[] gos = flock.allFish.ToArray();
+            GameObject[] gos = flock.schoolFishPrefabs.ToArray();
             speed = Random.Range(0.5f, 1.5f) * averageSpeed;
 
             // 以父类位置作为群体中心参考点（替代原target）
-            Vector3 vCenter = flock.transform.position; 
+            Vector3 vCenter = flock.schoolParent.transform.position; 
             Vector3 vAvoid = Vector3.zero;
             float gSpeed = 0;
-            Vector3 goalPos = flock.transform.position; // 目标点改为父类位置
+            Vector3 goalPos = flock.schoolParent.transform.position; // 目标点改为父类位置
 
             int groupSize = 0;
 
@@ -132,9 +132,9 @@ namespace DistantLands
         /// </summary>
         void OnDestroy()
         {
-            if (flock != null && flock.allFish != null && flock.allFish.Contains(gameObject))
+            if (flock != null && flock.schoolFishPrefabs != null && flock.schoolFishPrefabs.Contains(gameObject))
             {
-                flock.allFish.Remove(gameObject);
+                flock.schoolFishPrefabs.Remove(gameObject);
             }
         }
     }
