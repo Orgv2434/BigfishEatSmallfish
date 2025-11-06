@@ -164,8 +164,17 @@ namespace DistantLands
 
         protected virtual bool IsSchoolSettingValid(FishSchoolSetting setting)
         {
-            if (setting.spawnTransform == null) return false;
-            if (setting.schoolParent == null) return false;
+            if (setting.spawnTransform == null)
+            {
+                Debug.Log("transform" + setting.schoolName + "is null");
+                return false;
+            }
+            if (setting.schoolParent == null)
+            {
+                Debug.Log("parent" + setting.schoolName + "is null");
+                return false;
+            }
+                
             if ((setting.schoolFishPrefabs == null || setting.schoolFishPrefabs.Count == 0) &&
                 (fishPrefabs == null || fishPrefabs.Count == 0))
                 return false;
