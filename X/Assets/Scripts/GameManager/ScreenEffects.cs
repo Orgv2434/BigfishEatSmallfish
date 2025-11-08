@@ -30,5 +30,6 @@ public class ScreenEffects : MonoBehaviour
     {
         transitionAnimator.SetBool("Fadeout", false);
         transitionAnimator.SetBool("Fadein", true);
+        FishGameFlowManager.Instance.OnLoadPrepareScene();
     }
 }

@@ -3,6 +3,8 @@ using UnityEngine.UI;
 using TMPro;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
+using TripoForUnity;
+using System;
 
 /// <summary>
 /// 3D大鱼吃小鱼 游戏流程总控制器（单例场景+AI画板版）
@@ -49,7 +51,7 @@ public class FishGameFlowManager : MonoBehaviour
     public TMP_Text tipText;
     public Image imagePreview;
     public GameObject modelPreview;
-    public Button btnEnterGame;  // 点击此按钮时才创建新玩家
+    private Button btnEnterGame;  // 点击此按钮时才创建新玩家
 
     [Header("游戏中UI")]
     public GameObject inGameUI;
@@ -98,7 +100,6 @@ public class FishGameFlowManager : MonoBehaviour
         CheckDrawingBoardEmpty();
         imagePreview.gameObject.SetActive(false);
         modelPreview.SetActive(false);
-        btnEnterGame.gameObject.SetActive(false);
         BindInputEvents();
     }
 
@@ -161,15 +162,20 @@ public class FishGameFlowManager : MonoBehaviour
                 
                 break;
             case GameState.PrepareStage:
-                if(isDebugMode)
+                if (isDebugMode)
                 {
                     // 调试模式：直接创建玩家并进入游戏
                     CreateNewPlayerFish();
                     SwitchToState(GameState.GamePlaying);
                     return;
                 }
-                ScreenEffects.Instance.StartCoroutine(ScreenEffects.Instance.LoadScene(1)); // 加载准备场景
-                break;
+                else // 非调试模式
+                {
+
+                    ScreenEffects.Instance.StartCoroutine(ScreenEffects.Instance.LoadScene(1)); // 加载准备场景
+                    break;
+                }
+
             case GameState.GamePlaying:
                 inGameUI.SetActive(true);
                 Time.timeScale = 1f;
@@ -185,6 +191,8 @@ public class FishGameFlowManager : MonoBehaviour
                 break;
         }
     }
+
+
     #endregion
 
     #region 输入事件绑定
@@ -211,19 +219,12 @@ public class FishGameFlowManager : MonoBehaviour
 
         // 准备阶段
         btnGenerate.onClick.RemoveAllListeners();
-        btnGenerate.onClick.AddListener(TryGeneratePreview);
         var drawingBoardScript = drawingBoard.GetComponent<DrawingBoard>();
         if (drawingBoardScript != null)
         {
             drawingBoardScript.OnDrawingChanged += CheckDrawingBoardEmpty;
         }
 
-        // 关键修改：点击"进入游戏"按钮时，强制创建新玩家（先销毁旧的）
-        btnEnterGame.onClick.AddListener(() =>
-        {
-            CreateNewPlayerFish();  // 明确创建新玩家
-            SwitchToState(GameState.GamePlaying);
-        });
 
         // 游戏中
         btnPause.onClick.AddListener(() => SwitchToState(GameState.GamePaused));
@@ -260,6 +261,13 @@ public class FishGameFlowManager : MonoBehaviour
         Application.Quit();
 #endif
     }
+
+    // 完成模型生成回调
+        private void OnModelGenerated(string modelPath)
+    {
+        btnEnterGame.gameObject.SetActive(true);
+       
+    }
     #endregion
 
     #region AI画板核心逻辑
@@ -272,25 +280,6 @@ public class FishGameFlowManager : MonoBehaviour
         tipText.text = "画板上还没有任何东西噢！";
     }
 
-    private void TryGeneratePreview()
-    {
-        var drawingBoardScript = drawingBoard.GetComponent<DrawingBoard>();
-        if (drawingBoardScript == null) return;
-
-        bool isEmpty = drawingBoardScript.GetDrawingCount() == 0;
-        if (isEmpty)
-        {
-            tipText.text = "画板上还没有任何东西噢！";
-            tipText.gameObject.SetActive(true);
-            return;
-        }
-
-        GenerateFishPreview();
-        imagePreview.gameObject.SetActive(true);
-        modelPreview.gameObject.SetActive(true);
-        btnEnterGame.gameObject.SetActive(true);
-        tipText.gameObject.SetActive(false);
-    }
 
     private void GenerateFishPreview()
     {
@@ -341,14 +330,54 @@ public class FishGameFlowManager : MonoBehaviour
         }
     }
     #endregion
-    
+
     // 游戏没开始时回到主界面
     public void BackToMainMenu(GameObject obj)
     {
-       obj.SetActive(false);
-       SwitchToState(GameState.MainMenu);
+        obj.SetActive(false);
+        SwitchToState(GameState.MainMenu);
     }
 
+    // 加载完准备场景绑定
+    public void OnLoadPrepareScene()
+    {
+       GameObject parentObj = GameObject.Find("CanvasDrawing"); // 父物体必须激活
+    if (parentObj == null)
+    {
+        Debug.LogError("找不到父物体Canvas/PrepareUI");
+        return;
+    }
+
+    // 查找子物体（即使隐藏也能找到）
+    Transform readyBtnTrans = parentObj.transform.Find("ReadyButton");
+        if (readyBtnTrans == null)
+        {
+            Debug.LogError("父物体下找不到ReadyButton");
+            return;
+        }
+        btnEnterGame = readyBtnTrans.GetComponent<Button>();
+        if (btnEnterGame == null)
+        {
+            Debug.LogError("ReadyButton 上没有 Button 组件！");
+            return;
+        }
+
+        btnEnterGame.onClick.AddListener(() =>
+        {
+            CreateNewPlayerFish();
+            SwitchToState(GameState.GamePlaying);
+        });
+
+        TripoRuntimeCore tripoCore = FindObjectOfType<TripoRuntimeCore>();
+        if (tripoCore == null)
+        {
+            Debug.LogError("找不到对应的 tripoCore！");
+            return;
+        }
+        tripoCore.OnModelGenerateComplete.AddListener(OnModelGenerated);
+
+    }
+    
     #region 应用焦点处理
     // private void OnApplicationFocus(bool hasFocus)
     // {
