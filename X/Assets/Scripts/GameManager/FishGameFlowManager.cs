@@ -58,7 +58,7 @@ public class FishGameFlowManager : MonoBehaviour
     public Button btnDevelopers;
 
 
-    private Button btnEnterGame;  // 点击此按钮时才创建新玩家
+    public Button btnEnterGame;  // 点击此按钮时才创建新玩家
 
     [Header("游戏中UI")]
     public GameObject inGameUI;
@@ -99,6 +99,9 @@ public class FishGameFlowManager : MonoBehaviour
     private void Start()
     {
         HideAllUI();
+
+        // 加载主界面UI
+        mainMenuUI.SetActive(true);
         SwitchToState(GameState.MainMenu);
         BindUIEvents();
         BindInputEvents();
@@ -106,10 +109,18 @@ public class FishGameFlowManager : MonoBehaviour
 
     private void HideAllUI()
     {
-        mainMenuUI.SetActive(true);
+        mainMenuUI.SetActive(false);
         inGameUI.SetActive(false);
         pauseUI.SetActive(false);
         gameOverUI.SetActive(false);
+    }
+
+    public void ActiveAllUI()
+    {
+        mainMenuUI.SetActive(true);
+        inGameUI.SetActive(true);
+        pauseUI.SetActive(true);
+        gameOverUI.SetActive(true);
     }
     #endregion
 
@@ -128,6 +139,7 @@ public class FishGameFlowManager : MonoBehaviour
         {
             case GameState.MainMenu:
                 mainMenuUI.SetActive(false);
+
                 break;
             case GameState.PrepareStage:
             if (isDebugMode)
@@ -273,7 +285,7 @@ public class FishGameFlowManager : MonoBehaviour
     // 模型生成完成时的回调（由ModelHandler调用）
     public void OnModelGenerated(string modelPath)
     {
-        btnEnterGame.gameObject.SetActive(true);
+       
         if (!isDebugMode) // 非测试模式才保存生成的模型路径
         {
             generatedModelPath = modelPath;
@@ -342,12 +354,12 @@ public class FishGameFlowManager : MonoBehaviour
         }
 
         Transform firstChild = generatedModel.transform.GetChild(0);
-        Renderer childRenderer = firstChild.GetComponent<Renderer>();
+        Renderer childRenderer = firstChild.gameObject.GetComponent<Renderer>();
 
         if (childRenderer != null && childRenderer.material != null && childRenderer.material.mainTexture != null && playerMaterial != null)
         {
             playerMaterial.mainTexture = childRenderer.material.mainTexture;
-            Debug.Log("已将模型子物体的基础贴图应用到playerMaterial");
+            Debug.Log("已将模型子物体的基础贴图"+"应用到playerMaterial");
         }
         else
         {
@@ -365,76 +377,22 @@ public class FishGameFlowManager : MonoBehaviour
             Debug.LogWarning("模型没有Renderer组件或playerMaterial未赋值，无法应用材质");
         }
 
-        fishPrefab = generatedModel;
-        Debug.Log("已将生成的模型设置为fishPrefab");
+    fishPrefab = generatedModel;
+    Debug.Log("已将生成的模型设置为fishPrefab");
+
+        // 激活进入游戏按钮（确保此时fishPrefab已赋值）
+        if (btnEnterGame != null)
+        {
+            btnEnterGame.gameObject.SetActive(true);
+        }
+    
     }
 
     // 新增：场景加载完成后重新获取当前场景引用（核心修改2）
-    public void OnSceneLoaded(Scene scene, LoadSceneMode mode)
-    {
-        // 主场景（索引0）加载后，重新获取主场景UI引用
-        if (scene.buildIndex == 0)
-        {
-            GameObject mainUIParent = GameObject.Find("MainMenuUI");
-            if (mainUIParent != null)
-            {
-                mainMenuUI = mainUIParent;
-                btnStartGame = mainUIParent.transform.Find("main_Start").GetComponent<Button>(); // 原BtnStartGame改为Start
-                btnSettings = mainUIParent.transform.Find("main_Settings").GetComponent<Button>(); // 原BtnSettings改为Settings
-                btnDevelopers = mainUIParent.transform.Find("main_Developers").GetComponent<Button>(); // 原BtnDevelopers改为Developers
-                SettingsUI = GameObject.Find("SettingUI"); // 直接查找SettingUI根物体
-                DevelepersUI = GameObject.Find("DevelepersUI"); // 直接查找DevelepersUI根物体
-                RebindMainMenuEvents();
-
-            }
-
-            // 游戏中UI
-            GameObject inGameUIParent = GameObject.Find("InGameUI");
-            if (inGameUIParent != null)
-            {
-                inGameUI = inGameUIParent;
-                btnPause = inGameUIParent.transform.Find("game_Pause").GetComponent<Button>(); // 按钮名称改为Pause
-            }
-
-            // 暂停界面
-            GameObject pauseUIParent = GameObject.Find("PauseUI");
-            if (pauseUIParent != null)
-            {
-                pauseUI = pauseUIParent;
-                btnResume = pauseUIParent.transform.Find("Panel/pau_BackGame").GetComponent<Button>(); // 层级为Panel/Resume
-                btnReturnMenu = pauseUIParent.transform.Find("Panel/pau_BackMainMenu").GetComponent<Button>(); // 层级为Panel/ReturnMenu
-            }
-
-            // 结算界面
-            GameObject endUIParent = GameObject.Find("EndUI");
-            if (endUIParent != null)
-            {
-                gameOverUI = endUIParent;
-                btnRestart = endUIParent.transform.Find("end_Restart").GetComponent<Button>(); // 第一个Button为重新开始
-                btnQuit = endUIParent.transform.Find("end_BackMainMenu").GetComponent<Button>(); // 第二个Button为退出
-            }
-
-            // 玩家生成点
-            GameObject spawnPointObj = GameObject.Find("PlayerSpawnPoint");
-            if (spawnPointObj != null)
-            {
-                playerSpawnPoint = spawnPointObj.transform;
-            }
-            // 重新绑定主界面事件，确保引用有效
-            RebindMainMenuEvents();
-            CreateNewPlayerFish(); // 重新创建玩家鱼
-
-        }
-        else if(scene.buildIndex == 1)
-        {
-           OnLoadPrepareScene();
-        }
-
-    } 
+   
     private void OnDestroy()
     {
         Time.timeScale = 1f;
-        SceneManager.sceneLoaded -= OnSceneLoaded;
     }
     // 新增：重新绑定主界面事件（避免引用失效）（核心修改6）
     private void RebindMainMenuEvents()
@@ -553,7 +511,11 @@ public class FishGameFlowManager : MonoBehaviour
         tripoCore.OnModelGenerateComplete.AddListener(OnModelGenerated);
 
     }
-    
+    // 回到主场景
+    public void OnLoadMainMenuScene()
+    {   
+        CreateNewPlayerFish();
+    }
     
     #region 应用焦点处理
     // private void OnApplicationFocus(bool hasFocus)

@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using UnityEngine;
 using UnityEngine.Networking;
 using System.Collections;
@@ -21,7 +21,7 @@ namespace TripoForUnity
         {
             // 初始化保存路径：按时间分文件夹（推荐，避免文件冲突）
             modelSavePath = Path.Combine(
-                Path.GetDirectoryName(Application.dataPath), // 获取Assets的上级目录（项目根目录）
+                Application.dataPath, 
                 "TripoModels",
                 DateTime.Now.ToString("yyyyMMdd-HHmmss") 
             );
