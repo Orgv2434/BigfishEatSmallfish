@@ -29,7 +29,7 @@ namespace DistantLands
             if (turning)
             {
                 // 转向逻辑：以父类位置为中心调整方向
-                Vector3 direction = flock.schoolParent.transform.position + Vector3.up * Random.Range(-2, 2) - transform.position;
+                Vector3 direction = flock.spawnTransform.transform.position + Vector3.up * Random.Range(-2, 2) - transform.position;
                 transform.rotation = Quaternion.Slerp(
                     transform.rotation,
                     Quaternion.LookRotation(direction),
@@ -55,7 +55,7 @@ namespace DistantLands
             if (flock == null) return;
 
             // 用父类自身位置作为活动中心，替代原target
-            float distanceFromCenter = Vector3.Distance(transform.position, flock.schoolParent.transform.position);
+            float distanceFromCenter = Vector3.Distance(transform.position, flock.spawnTransform.transform.position);
             turning = distanceFromCenter >= flock.wanderSize; // 超出范围则需要转向
         }
 
@@ -70,10 +70,10 @@ namespace DistantLands
             speed = Random.Range(0.5f, 1.5f) * averageSpeed;
 
             // 以父类位置作为群体中心参考点（替代原target）
-            Vector3 vCenter = flock.schoolParent.transform.position; 
+            Vector3 vCenter = flock.spawnTransform.transform.position; 
             Vector3 vAvoid = Vector3.zero;
             float gSpeed = 0;
-            Vector3 goalPos = flock.schoolParent.transform.position; // 目标点改为父类位置
+            Vector3 goalPos = flock.spawnTransform.transform.position; // 目标点改为父类位置
 
             int groupSize = 0;
 
