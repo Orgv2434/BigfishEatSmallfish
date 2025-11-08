@@ -9,10 +9,8 @@ public class FishSchoolSetting
 {
    [Tooltip("鱼群的名称标识")]
     public string schoolName = "Fish School 1";
-    [Tooltip("鱼群的生成位置参考点")]
-    public Transform spawnTransform;
-    [Tooltip("鱼群实例的父物体（用于层级管理）")]
-    public GameObject schoolParent;
+    [Tooltip("鱼群的生成位置参考点及父物体（用于层级管理）")]
+    public Transform spawnTransform;  // 合并spawnTransform和schoolParent为一个
     [Tooltip("该鱼群可使用的鱼预制体列表")]
     public List<GameObject> schoolFishPrefabs = new List<GameObject>();
     [Tooltip("鱼群的漫游范围大小（单位：米）")]
@@ -21,6 +19,26 @@ public class FishSchoolSetting
     public int numFish = 30;
     [Tooltip("鱼被吃掉后重新生成的延迟时间（秒）")]
     public float respawnDelay = 2f;
+
+    [Header("=== 挡位系统 ===")]  // 移至鱼群配置中
+    [Tooltip("鱼的最大挡位等级")]
+    public int maxTier = 5;
+    [Tooltip("每个挡位对应的经验值（索引对应挡位等级）")]
+    public int[] expValues = { 4, 10, 30, 80, 200, 500 };
+    [Tooltip("基础大小缩放值")]
+    public float baseSize = 0.8f;
+    [Tooltip("每个挡位增加的大小缩放值")]
+    public float sizeIncreasePerTier = 0.3f;
+    [Tooltip("大小的随机变化范围（比例）")]
+    public float sizeVariance = 0.1f;
+    [Tooltip("测试模式开关（开启后鱼的挡位固定为最低）")]
+    public bool testMode = false;
+
+    [Header("=== 技能鱼配置 ===")]  // 移至鱼群配置中
+    [Tooltip("是否为技能鱼群")]
+    public bool isSkillFishSchool = false;
+    [Tooltip("技能类型权重配置")]
+    public int[] skillTypeWeights = { 1, 1, 1, 1 }; // 对应四种技能类型的权重
 }
 
 public class FishSchoolIdentifier : MonoBehaviour
@@ -54,17 +72,6 @@ namespace DistantLands
         [Tooltip("清理空引用列表的时间间隔（秒）")]
         public float listCleanupInterval = 5f;
 
-        [Header("=== 挡位系统 ===")]
-        [Tooltip("鱼的最大挡位等级")]
-        public int maxTier = 5;
-        [Tooltip("每个挡位对应的经验值（索引对应挡位等级）")]
-        public int[] expValues = { 4, 10, 30, 80, 200, 500 };
-        [Tooltip("基础大小缩放值")]
-        public float baseSize = 0.8f;
-        [Tooltip("每个挡位增加的大小缩放值")]
-        public float sizeIncreasePerTier = 0.3f;
-        [Tooltip("大小的随机变化范围（比例）")]
-        public float sizeVariance = 0.1f;
         [Tooltip("测试模式开关（开启后鱼的挡位固定为最低）")]
         public bool testMode = false;
 
@@ -105,6 +112,7 @@ namespace DistantLands
         #endregion
 
         #region 多鱼群管理
+        
         protected virtual void InitializeAllFishSchools()
         {
             if (allSchoolSettings == null || allSchoolSettings.Count == 0)
@@ -164,22 +172,13 @@ namespace DistantLands
 
         protected virtual bool IsSchoolSettingValid(FishSchoolSetting setting)
         {
-            if (setting.spawnTransform == null)
-            {
-                Debug.Log("transform" + setting.schoolName + "is null");
-                return false;
-            }
-            if (setting.schoolParent == null)
-            {
-                Debug.Log("parent" + setting.schoolName + "is null");
-                return false;
-            }
-                
+            if (setting.spawnTransform == null) return false;  // 仅检查合并后的spawnTransform
             if ((setting.schoolFishPrefabs == null || setting.schoolFishPrefabs.Count == 0) &&
                 (fishPrefabs == null || fishPrefabs.Count == 0))
                 return false;
             return true;
         }
+        
         #endregion
 
         #region 对象池核心
@@ -232,10 +231,12 @@ namespace DistantLands
             Vector3 spawnPos = setting.spawnTransform.position + Random.insideUnitSphere * setting.wanderSize;
             fish.transform.position = spawnPos;
             fish.transform.rotation = Quaternion.identity;
-            fish.transform.parent = setting.schoolParent.transform;
+            fish.transform.parent = setting.spawnTransform;
 
-            SkillFishData fishData = GenerateFishData();
-            fish.transform.localScale = CalculateFishScale((int)fishData.fishTier);
+            SkillFishData fishData = GenerateFishData(setting);  // 传入鱼群配置
+   
+            fish.transform.localScale = CalculateFishScale((int)fishData.fishTier, setting);  // 传入鱼群配置
+
 
             ResetFishComponents(fish, fishData, setting);
             InitializeFishAI(fish, setting);
@@ -391,30 +392,33 @@ namespace DistantLands
         #endregion
 
         #region 挡位系统
-        protected virtual SkillFishData GenerateFishData()
+        protected virtual SkillFishData GenerateFishData(FishSchoolSetting setting)  // 新增setting参数
         {
             SkillFishData data = new SkillFishData();
-            int actualTier = testMode ? 0 : GetGaussianTier();
-            data.baseExpValue = (actualTier >= 0 && actualTier < expValues.Length) ? expValues[actualTier] : 0;
+            int actualTier = setting.testMode ? 0 : GetGaussianTier(setting);  // 使用鱼群配置的testMode
+            data.baseExpValue = (actualTier >= 0 && actualTier < setting.expValues.Length) ? setting.expValues[actualTier] : 0;  // 使用鱼群配置的expValues
             data.fishTier = (FishTier)actualTier;
             return data;
         }
+        
 
-        protected virtual int GetGaussianTier()
+       protected virtual int GetGaussianTier(FishSchoolSetting setting)  // 新增setting参数
         {
             float mean = 1f;
             float stdDev = 0.8f;
             float gaussian = mean + Mathf.Sqrt(-2.0f * Mathf.Log(Random.value)) * Mathf.Sin(2.0f * Mathf.PI * Random.value) * stdDev;
-            return Mathf.Clamp(Mathf.RoundToInt(gaussian), 0, maxTier - 1);
+            return Mathf.Clamp(Mathf.RoundToInt(gaussian), 0, setting.maxTier - 1);  // 使用鱼群配置的maxTier
         }
 
-        protected virtual Vector3 CalculateFishScale(int tier)
+
+
+        protected virtual Vector3 CalculateFishScale(int tier, FishSchoolSetting setting)  // 新增setting参数
         {
-            float baseScale = baseSize + (tier * sizeIncreasePerTier);
-            float randomScale = baseScale * Random.Range(1 - sizeVariance, 1 + sizeVariance);
-            return Vector3.one * Mathf.Max(randomScale, baseSize * 0.8f);
+            float baseScale = setting.baseSize + (tier * setting.sizeIncreasePerTier);  // 使用鱼群配置的尺寸参数
+            float randomScale = baseScale * Random.Range(1 - setting.sizeVariance, 1 + setting.sizeVariance);  // 使用鱼群配置的随机范围
+            return Vector3.one * Mathf.Max(randomScale, setting.baseSize * 0.8f);  // 使用鱼群配置的基础大小
         }
-
+        
         protected virtual void AddMeshColliderWithTrigger(GameObject fishObj)
         {
             MeshFilter meshFilter = fishObj.GetComponent<MeshFilter>() ?? fishObj.GetComponentInChildren<MeshFilter>();
