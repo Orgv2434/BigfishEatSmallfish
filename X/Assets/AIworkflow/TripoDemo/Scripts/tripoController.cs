@@ -98,6 +98,7 @@ namespace TripoForUnity
             }
             var gltfModel = SimpleModel.AddComponent<GLTFast.GltfAsset>();
             gltfModel.Url = GltfUrl;
+            
         }
 
         void Update()

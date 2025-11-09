@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using UnityEngine;
 using UnityEngine.Networking;
 using System.Collections;
@@ -9,11 +9,11 @@ namespace TripoForUnity
 {
     public class ModelHandler : MonoBehaviour
     {
-        public Slider progressBar;   // 在 Inspector 拖一个 UI Slider 进来
+
         public Text progressText;    // 可选：显示进度百分比
         private string modelSavePath; // 保存模型的路径（Assets/TripoModels）
         private TripoRuntimeCore tripoRuntimeCore; // TripoRuntimeCore实例
-        private const float DownloadTimeout = 50f; // 下载超时时间（可调整）
+        private const float DownloadTimeout = 100f; // 下载超时时间（可调整）
         private string _lastDownloadedModelPath; // 新增：保存最后一次下载的模型文件路径
 
 
@@ -21,7 +21,7 @@ namespace TripoForUnity
         {
             // 初始化保存路径：按时间分文件夹（推荐，避免文件冲突）
             modelSavePath = Path.Combine(
-                Path.GetDirectoryName(Application.dataPath), // 获取Assets的上级目录（项目根目录）
+                Application.dataPath, 
                 "TripoModels",
                 DateTime.Now.ToString("yyyyMMdd-HHmmss") 
             );
@@ -35,13 +35,7 @@ namespace TripoForUnity
 
             Debug.Log($"模型保存路径（项目根目录下）：{modelSavePath}");
 
-            // 初始化进度条（原有逻辑不变）
-            if (progressBar != null)
-            {
-                progressBar.gameObject.SetActive(false);
-                progressBar.maxValue = 1;
-                progressBar.value = 0;
-            }
+
 
             // 获取TripoRuntimeCore实例（原有逻辑不变）
             tripoRuntimeCore = FindObjectOfType<TripoRuntimeCore>();
@@ -72,8 +66,6 @@ namespace TripoForUnity
         {
             // 初始化UI（原有逻辑不变）
             UpdateProgressUI(0, "准备下载...");
-            if (progressBar != null)
-                progressBar.gameObject.SetActive(true);
 
             UnityWebRequest webRequest = UnityWebRequest.Get(url);
             webRequest.timeout = (int)DownloadTimeout; 
@@ -140,8 +132,7 @@ namespace TripoForUnity
             }
 
             yield return new WaitForSeconds(3f);
-            if (progressBar != null)
-                progressBar.gameObject.SetActive(false);
+
         }
 
         /// <summary>
@@ -163,8 +154,7 @@ namespace TripoForUnity
         // 原有方法（UpdateProgressUI、GetFileNameFromUrl）保持不变
         private void UpdateProgressUI(float progress, string text)
         {
-            if (progressBar != null)
-                progressBar.value = progress;
+
             if (progressText != null)
                 progressText.text = text;
         }
