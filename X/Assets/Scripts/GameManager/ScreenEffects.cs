@@ -24,22 +24,25 @@ public class ScreenEffects : MonoBehaviour
         transitionAnimator.SetBool("Fadein", false);
         yield return new WaitForSecondsRealtime(1f);
         AsyncOperation async = SceneManager.LoadSceneAsync(sceneIndex);
-        async.completed += OnLoadScene;
-        switch (sceneIndex)
+        async.completed += (AsyncOperation obj) =>
         {
-            case 0:
-                FishGameFlowManager.Instance.OnLoadMainMenuScene();
-                break;
-            case 1:
-                FishGameFlowManager.Instance.OnLoadPrepareScene();
-                break;
-        }
+            transitionAnimator.SetBool("Fadeout", false);
+
+            transitionAnimator.SetBool("Fadein", true);
+            switch (sceneIndex)
+            {
+                case 0:
+                    FishGameFlowManager.Instance.OnLoadMainMenuScene();
+                    break;
+                case 1:
+                    FishGameFlowManager.Instance.OnLoadPrepareScene();
+                    break;
+            }
+
+
+        };
+
     }
-    // 准备场景加载完成后的回调
-    public void OnLoadScene(AsyncOperation obj)
-    {
-        transitionAnimator.SetBool("Fadeout", false);
-        transitionAnimator.SetBool("Fadein", true);
-    }
+
     
 }

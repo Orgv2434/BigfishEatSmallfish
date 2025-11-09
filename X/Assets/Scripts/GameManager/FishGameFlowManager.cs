@@ -9,6 +9,7 @@ using System.Collections;
 using UnityEngine.Networking;
 using System.IO;
 using GLTFast;
+using DistantLands;
 /// <summary>
 /// 3D大鱼吃小鱼 游戏流程总控制器（单例场景+AI画板版）
 /// </summary>
@@ -167,10 +168,10 @@ public class FishGameFlowManager : MonoBehaviour
         {
             case GameState.MainMenu:
                 mainMenuUI.SetActive(true);
-                if (playerFish != null)
+                GameObject player = GameObject.FindWithTag("Player");
+                if ( player!= null)
                 {
-                    Destroy(playerFish);
-                    playerFish = null;
+                    Destroy(player);
                 }
                 
                 break;
@@ -295,126 +296,173 @@ public class FishGameFlowManager : MonoBehaviour
             StartCoroutine(ProcessGeneratedModel());
         }
     }
-    private IEnumerator ProcessGeneratedModel()
+private IEnumerator ProcessGeneratedModel()
+{
+    yield return null;
+
+    // 查找ModelHandler并增强调试
+    ModelHandler modelHandler = FindObjectOfType<ModelHandler>();
+    if (modelHandler == null)
     {
-        yield return null;
+        Debug.LogError("[ProcessGeneratedModel] 找不到ModelHandler实例！请检查场景中是否存在ModelHandler组件");
+        yield break;
+    }
+    Debug.Log("[ProcessGeneratedModel] 成功找到ModelHandler实例");
 
-        ModelHandler modelHandler = FindObjectOfType<ModelHandler>();
-        if (modelHandler == null)
-        {
-            Debug.LogError("找不到ModelHandler实例！");
-            yield break;
-        }
-
-        string fullModelPath = modelHandler.GetLastDownloadedModelPath();
-        if (string.IsNullOrEmpty(fullModelPath) || !File.Exists(fullModelPath))
-        {
-            Debug.LogError($"模型文件不存在: {fullModelPath}");
-            yield break;
-        }
-
-        // 关键修改：替换AssetBundle加载方式，改用GLTFast（使用 GltfImport 并在协程中等待 Task 完成）
-        // 需要确保已在项目中安装并导入 GLTFast 包
-        var gltf = new GLTFast.GltfImport();
-
-        // Load 接受文件路径或 URL，使用 file:// 前缀以确保本地文件加载
-        var loadTask = gltf.Load("file://" + fullModelPath);
-        // 等待 Task 完成
-        yield return new WaitUntil(() => loadTask.IsCompleted);
-
-        // 检查加载结果
-        if (!loadTask.Result)
-        {
-            Debug.LogError($"GLB模型加载失败: {fullModelPath}");
-            yield break;
-        }
-
-        // 实例化主场景到一个新的根对象上
-        GameObject root = new GameObject("GLB_Root");
-        var instantiateTask = gltf.InstantiateMainSceneAsync(root.transform);
-        yield return new WaitUntil(() => instantiateTask.IsCompleted);
-
-        if (instantiateTask.IsFaulted || !instantiateTask.Result)
-        {
-            Debug.LogError("GLTF 模型实例化失败");
-            Destroy(root);
-            yield break;
-        }
-
-        // 获取生成的模型实例
-        generatedModel = root;
-        generatedModel.transform.SetParent(null);
-        generatedModel.SetActive(false);
-
-        // 后续材质处理逻辑不变（保持原代码）
-        if (generatedModel.transform.childCount == 0)
-        {
-            Debug.LogError("生成的模型没有子物体！");
-            yield break;
-        }
-
-        Transform firstChild = generatedModel.transform.GetChild(0);
-        Renderer childRenderer = firstChild.gameObject.GetComponent<Renderer>();
-
-        if (childRenderer != null && childRenderer.material != null && childRenderer.material.mainTexture != null && playerMaterial != null)
-        {
-            playerMaterial.mainTexture = childRenderer.material.mainTexture;
-            Debug.Log("已将模型子物体的基础贴图"+"应用到playerMaterial");
-        }
-        else
-        {
-            Debug.LogWarning("第一个子物体没有有效的基础贴图，使用默认材质");
-        }
-
-        Renderer modelRenderer = generatedModel.GetComponent<Renderer>();
-        if (modelRenderer != null && playerMaterial != null)
-        {
-            modelRenderer.material = playerMaterial;
-            Debug.Log("已将playerMaterial应用到生成的模型");
-        }
-        else
-        {
-            Debug.LogWarning("模型没有Renderer组件或playerMaterial未赋值，无法应用材质");
-        }
-
-    fishPrefab = generatedModel;
-    Debug.Log("已将生成的模型设置为fishPrefab");
-
-        // 激活进入游戏按钮（确保此时fishPrefab已赋值）
-        if (btnEnterGame != null)
-        {
-            btnEnterGame.gameObject.SetActive(true);
-        }
+    // 获取模型路径并严格校验
+    string fullModelPath = modelHandler.GetLastDownloadedModelPath();
+    Debug.Log($"[ProcessGeneratedModel] 尝试加载模型路径: {fullModelPath}");
     
+    if (string.IsNullOrEmpty(fullModelPath))
+    {
+        Debug.LogError("[ProcessGeneratedModel] 模型路径为空！ModelHandler未正确记录下载路径");
+        yield break;
     }
 
+    if (!File.Exists(fullModelPath))
+    {
+        Debug.LogError($"[ProcessGeneratedModel] 模型文件不存在！路径: {fullModelPath} 请检查文件是否被删除或路径是否正确");
+        yield break;
+    }
+    Debug.Log("[ProcessGeneratedModel] 模型文件存在，开始加载流程");
+
+    // 处理跨平台路径前缀问题
+    string fileUrl;
+#if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
+    fileUrl = "file:///" + fullModelPath.Replace("\\", "/"); // Windows需要三个斜杠，替换反斜杠为正斜杠
+#else
+    fileUrl = "file://" + fullModelPath; // 其他平台使用两个斜杠
+#endif
+    Debug.Log($"[ProcessGeneratedModel] 处理后的文件URL: {fileUrl}");
+
+    // 初始化GLTF加载器
+    var gltf = new GLTFast.GltfImport();
+    if (gltf == null)
+    {
+        Debug.LogError("[ProcessGeneratedModel] GLTFast加载器初始化失败！请检查GLTFast包是否正确导入");
+        yield break;
+    }
+
+    // 加载GLTF模型并处理任务状态
+    var loadTask = gltf.Load(fileUrl);
+    yield return new WaitUntil(() => loadTask.IsCompleted);
+
+    // 检查加载任务异常
+    if (loadTask.IsFaulted)
+    {
+        Debug.LogError($"[ProcessGeneratedModel] GLTF加载任务抛出异常: {loadTask.Exception?.InnerException?.Message}");
+        yield break;
+    }
+
+    // 检查加载结果
+    if (!loadTask.Result)
+    {
+        Debug.LogError($"[ProcessGeneratedModel] GLB模型加载失败！加载器返回失败状态，路径: {fileUrl}");
+        yield break;
+    }
+    Debug.Log("[ProcessGeneratedModel] GLTF模型加载成功");
+
+    // 实例化模型到场景
+    GameObject root = new GameObject("GLB_Root");
+    var instantiateTask = gltf.InstantiateMainSceneAsync(root.transform);
+    yield return new WaitUntil(() => instantiateTask.IsCompleted);
+
+    // 检查实例化任务异常
+    if (instantiateTask.IsFaulted)
+    {
+        Debug.LogError($"[ProcessGeneratedModel] 模型实例化任务抛出异常: {instantiateTask.Exception?.InnerException?.Message}");
+        Destroy(root);
+        yield break;
+    }
+
+    if (!instantiateTask.Result)
+    {
+        Debug.LogError("[ProcessGeneratedModel] GLTF模型实例化失败！实例化器返回失败状态");
+        Destroy(root);
+        yield break;
+    }
+    Debug.Log("[ProcessGeneratedModel] 模型实例化成功");
+
+    // 验证模型结构
+    if (root.transform.childCount == 0)
+    {
+        Debug.LogError("[ProcessGeneratedModel] 实例化的模型根对象没有子物体！模型可能为空或格式错误");
+        Destroy(root);
+        yield break;
+    }
+    Debug.Log($"[ProcessGeneratedModel] 模型根对象包含 {root.transform.childCount} 个子物体");
+
+    // 获取实际模型对象（取第一个有效子物体作为主体）
+    generatedModel = root.transform.GetChild(0).gameObject;
+    generatedModel.transform.SetParent(null); // 解除与根对象的关联
+    Destroy(root); // 销毁临时根对象
+    generatedModel.SetActive(false);
+    Debug.Log($"[ProcessGeneratedModel] 已获取模型主体: {generatedModel.name}");
+
+    // 查找模型中所有Renderer组件（递归查找子物体）
+    Renderer[] allRenderers = generatedModel.GetComponentsInChildren<Renderer>(true);
+    if (allRenderers.Length == 0)
+    {
+        Debug.LogError("[ProcessGeneratedModel] 模型及其子物体中未找到任何Renderer组件！无法应用材质");
+        yield break;
+    }
+    Debug.Log($"[ProcessGeneratedModel] 在模型中找到 {allRenderers.Length} 个Renderer组件");
+
+    // 处理材质和贴图
+    bool textureApplied = false;
+    if (playerMaterial != null)
+    {
+        // 尝试从第一个有效Renderer获取贴图
+        foreach (var renderer in allRenderers)
+        {
+            if (renderer.material != null && renderer.material.mainTexture != null)
+            {
+                playerMaterial.mainTexture = renderer.material.mainTexture;
+                Debug.Log($"[ProcessGeneratedModel] 已从 {renderer.gameObject.name} 提取贴图并应用到playerMaterial");
+                textureApplied = true;
+                break;
+            }
+        }
+
+        if (!textureApplied)
+        {
+            Debug.LogWarning("[ProcessGeneratedModel] 所有Renderer组件均无有效主贴图，使用playerMaterial默认贴图");
+        }
+
+        // 将playerMaterial应用到所有Renderer
+        foreach (var renderer in allRenderers)
+        {
+            renderer.material = playerMaterial;
+        }
+        Debug.Log("[ProcessGeneratedModel] 已将playerMaterial应用到模型所有Renderer");
+    }
+    else
+    {
+        Debug.LogError("[ProcessGeneratedModel] playerMaterial未赋值！无法处理模型材质");
+        yield break;
+    }
+
+        // 设置预制体并激活按钮
+    fishPrefab = generatedModel;
+    DontDestroyOnLoad(fishPrefab);
+    Debug.Log($"[ProcessGeneratedModel] 已将模型 {generatedModel.name} 设置为fishPrefab");
+
+    if (btnEnterGame != null)
+    {
+        btnEnterGame.gameObject.SetActive(true);
+        Debug.Log("[ProcessGeneratedModel] 已激活进入游戏按钮");
+    }
+    else
+    {
+        Debug.LogError("[ProcessGeneratedModel] btnEnterGame未赋值！无法激活进入游戏按钮");
+    }
+}
     // 新增：场景加载完成后重新获取当前场景引用（核心修改2）
    
     private void OnDestroy()
     {
         Time.timeScale = 1f;
     }
-    // 新增：重新绑定主界面事件（避免引用失效）（核心修改6）
-    private void RebindMainMenuEvents()
-    {
-        if (btnStartGame != null)
-        {
-            btnStartGame.onClick.RemoveAllListeners();
-            btnStartGame.onClick.AddListener(() => SwitchToState(GameState.PrepareStage));
-        }
-        if (btnSettings != null)
-        {
-            btnSettings.onClick.RemoveAllListeners();
-            btnSettings.onClick.AddListener(OpenSettingsPanel);
-        }
-        if (btnDevelopers != null)
-        {
-            btnDevelopers.onClick.RemoveAllListeners();
-            btnDevelopers.onClick.AddListener(OpenDevelopersPanel);
-        }
-    }
-
-
     #endregion
 
 
@@ -426,12 +474,13 @@ public class FishGameFlowManager : MonoBehaviour
     private void CreateNewPlayerFish()
     {
         // 先销毁已存在的玩家
-        if (playerFish != null)
+        GameObject player = GameObject.FindWithTag("Player");
+                
+        if (player != null)
         {
-            Destroy(playerFish);
-            playerFish = null;
+            Destroy(player);
         }
-
+                
         // 再创建新玩家
         if (fishPrefab == null)
         {
@@ -440,7 +489,16 @@ public class FishGameFlowManager : MonoBehaviour
         }
 
         // 如果是生成的模型，使用它创建玩家
-        playerFish = Instantiate(fishPrefab, playerSpawnPoint.position, Quaternion.identity);
+        playerFish = Instantiate(playerFish, playerSpawnPoint.position, Quaternion.identity);
+        // 删除旧模型
+        Destroy(playerFish.transform.GetChild(0).gameObject);
+        // 把新模型设置为第一个子物体
+
+        fishPrefab = Instantiate(fishPrefab, playerSpawnPoint.position, Quaternion.identity);
+        fishPrefab.transform.SetParent(playerFish.transform);
+        fishPrefab.transform.SetSiblingIndex(0);
+        fishPrefab.SetActive(true);
+
         playerFish.SetActive(true); // 激活模型
 
         // 相机跟随逻辑保持不变
@@ -448,7 +506,7 @@ public class FishGameFlowManager : MonoBehaviour
         GameObject cameraObj = GameObject.FindWithTag("ThirdPersonCamera");
         if (cameraObj != null && target != null)
         {
-            target.SetCameraTarget(playerFish.transform.GetChild(1).gameObject, cameraObj);
+            target.SetCameraTarget(GameObject.Find("LookRoot"), cameraObj);
         }
         else
         {
@@ -479,7 +537,7 @@ public class FishGameFlowManager : MonoBehaviour
         GameObject parentObj = GameObject.Find("CanvasDrawing"); // 父物体必须激活
         if (parentObj == null)
         {
-            Debug.LogError("找不到父物体Canvas/PrepareUI");
+             Debug.LogError("找不到父物体Canvas/PrepareUI");
             return;
         }
 
@@ -513,7 +571,8 @@ public class FishGameFlowManager : MonoBehaviour
     }
     // 回到主场景
     public void OnLoadMainMenuScene()
-    {   
+    {
+        playerSpawnPoint = GameObject.Find("PlayerSpawnPoint").transform;
         CreateNewPlayerFish();
     }
     
