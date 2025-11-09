@@ -480,16 +480,17 @@ private IEnumerator ProcessGeneratedModel()
         {
             Destroy(player);
         }
-                
+
         // 再创建新玩家
         if (fishPrefab == null)
         {
             Debug.LogError("请赋值小鱼预制体！");
             return;
         }
-
-        // 如果是生成的模型，使用它创建玩家
         playerFish = Instantiate(playerFish, playerSpawnPoint.position, Quaternion.identity);
+      if(!isDebugMode)
+        {
+
         // 删除旧模型
         Destroy(playerFish.transform.GetChild(0).gameObject);
         // 把新模型设置为第一个子物体
@@ -498,7 +499,7 @@ private IEnumerator ProcessGeneratedModel()
         fishPrefab.transform.SetParent(playerFish.transform);
         fishPrefab.transform.SetSiblingIndex(0);
         fishPrefab.SetActive(true);
-
+        }
         playerFish.SetActive(true); // 激活模型
 
         // 相机跟随逻辑保持不变

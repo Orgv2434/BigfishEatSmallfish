@@ -407,7 +407,7 @@ namespace DistantLands
             float mean = 1f;
             float stdDev = 0.8f;
             float gaussian = mean + Mathf.Sqrt(-2.0f * Mathf.Log(Random.value)) * Mathf.Sin(2.0f * Mathf.PI * Random.value) * stdDev;
-            return Mathf.Clamp(Mathf.RoundToInt(gaussian), 0, setting.maxTier - 1);  // 使用鱼群配置的maxTier
+            return Mathf.Clamp(Mathf.RoundToInt(gaussian), 0, setting.maxTier);  // 使用鱼群配置的maxTier
         }
 
 
