@@ -73,7 +73,7 @@ public class SketchDemo : MonoBehaviour
             Button btn = colorGrid.GetChild(i).GetComponent<Button>();
             btn.onClick.AddListener(() => { OnColorBtnClick(btn); });
         }
-        penPanel.Find("PenWidth Slider").GetComponent<Slider>().onValueChanged.AddListener(OnPenWidthSliderValueChanged);
+        //penPanel.Find("PenWidth Slider").GetComponent<Slider>().onValueChanged.AddListener(OnPenWidthSliderValueChanged);
         penPanel.Find("ReDraw Button").GetComponent<Button>().onClick.AddListener(OnReDrawBtnClick);
         penPanel.Find("Request Button").GetComponent<Button>().onClick.AddListener(OnRequestBtnClick);
         promptInput = penPanel.Find("Prompt InputField").GetComponent<InputField>();
