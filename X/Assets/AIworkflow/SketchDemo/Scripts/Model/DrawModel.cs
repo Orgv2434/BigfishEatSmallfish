@@ -62,7 +62,7 @@ public class DrawModel
         /// 取值为0时，代表不会对img进行修改，出来的图与img几乎一致
         /// 取值为1是，代表对img进行完全修改，与img无任何相似
         /// </summary>
-        public float denoisingStrength = 0.55f;
+        public float denoisingStrength = 0.5f;
 
         /// <summary>
         /// 高清化倍率，对生成的图片进行高清化处理，仅在`文生图`模式有效，取值范围为1~3之间
@@ -229,12 +229,12 @@ public class DrawModel
         /// * `1`: 关键字的效果更强，controlnet本身的控制效果会减弱
         /// * `2`: controlnet的控制会加强，更忽略关键词的效果
         /// </summary>
-        public int controlMode = 0;
+        public int controlMode = 1;
 
         /// <summary>
         /// 控制权重，取值范围0~2，控制权重越大，对画面影响效果越明显，默认为1
         /// </summary>
-        public float weight = 1;
+        public float weight = 0.5f;
 
         /// <summary>
         /// 控制开始时机，在绘制过程中，controlnet干预开始时机点，取值0~1,默认为0

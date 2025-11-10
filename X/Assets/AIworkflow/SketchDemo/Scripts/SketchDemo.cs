@@ -11,9 +11,9 @@ using UnityEngine.UI;
 public class SketchDemo : MonoBehaviour
 {
     [Header("Settings")]
-    public string setPrompts_forward = "一只3d卡通画风的完整的鱼，头在画面右侧，尾巴在画面左侧，";
-    public string setPrompts_back = "纯白色背景，画面只有鱼，不添加任何背景要素";
-    public string setNegativePrompts = "写实画风，复杂的背景，环境，植物，石头，珊瑚";
+    public string setPrompts_forward;
+    public string setPrompts_back;
+    public string setNegativePrompts;
 
     public DrawConfig config;
     public SpriteRenderer drawSprite;
@@ -28,6 +28,8 @@ public class SketchDemo : MonoBehaviour
 
     public string currentImagePath;
 
+
+
     void Start()
     {
         InitUI();
@@ -38,12 +40,26 @@ public class SketchDemo : MonoBehaviour
     {
         //预设提示词
         if (string.IsNullOrEmpty(setPrompts_forward))
-            setPrompts_forward = "一只3d卡通画风的鱼，头在画面右侧，尾巴在画面左侧，";
+            setPrompts_forward = "A fish, (low-poly fish), simple geometric shapes, flat color shading, " +
+        "\r\nstylized polygonal model, clean silhouette, minimal details," +
+        "\r\nmuted color palette, desaturated tones, soft pastel colors," +
+        "\r\nMorandi color scheme, soft harmonious colors," +
+        "\r\nlow color contrast, gentle tonal transitions, soothing color palette," +
+        "\r\nsolid colors, smooth surface, soft lighting," +
+        "\r\nfish facing left, head on left side, tail on right side, oriented to the left";
+
         if (string.IsNullOrEmpty(setPrompts_back))
-            setPrompts_back = "，白色背景";
+            setPrompts_back = "pure white background, single fish subject only, no background elements," +
+                "\r\nno outlines, no sketch lines, smooth surface, clean shading," +
+                "\r\ndo not include lineart, no bold edges, isolated on white";
+
         if (string.IsNullOrEmpty(setNegativePrompts))
-            setNegativePrompts = "写实画风，复杂的背景，环境，植物，石头，珊瑚，";
-        
+            setNegativePrompts = "realistic style, detailed background, environment, plants, rocks, corals," +
+                "\r\nvibrant colors, high saturation, bright neon colors, intense coloration," +
+                "\r\nhigh contrast colors, bold color contrasts, sharp tonal transitions," +
+                "\r\ngarish colors, electric colors, fluorescent tones, pure primary colors," +
+                "\r\nlineart, outline, bold lines, draw lines, sketch style, ink, cartoon outline," +
+                "\r\nfish facing right, head on right side, tail on left side, reversed orientation";
     }
 
     void InitUI()

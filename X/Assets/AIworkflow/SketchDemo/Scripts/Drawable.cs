@@ -5,7 +5,7 @@ using UnityEngine;
 public class Drawable : MonoBehaviour
 {
     public static Color Pen_Colour = Color.black;
-    public static int Pen_Width = 3;
+    public static int Pen_Width = 2;
 
     public delegate void Brush_Function(Vector2 world_position);
     // This is the function called when a left click happens

@@ -15,7 +15,7 @@ MonoBehaviour:
   BaseUrl: https://ai.huashi6.com/aiapi/v1
   DrawUrl: /draw
   TaskDetailUrl: /task/detail
-  DrawModelStyleId: 23
+  DrawModelStyleId: 853
   ControlnetType: canny
   ControlnetPreprocess: 1
-  Token: 69671180d7704a918ed44b21e6f5328f
+  Token: 6330fa98d302424c93a61158c8a1ca86
