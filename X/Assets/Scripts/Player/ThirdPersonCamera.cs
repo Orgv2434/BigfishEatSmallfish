@@ -1,12 +1,12 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
-using Cinemachine;
+using Unity.Cinemachine;
 
 [RequireComponent(typeof(ThirdPersonMove))] // 若无需强制依赖ThirdPersonMove，可删除此特性
 public class ThirdPersonCamera : MonoBehaviour
 {
     // 仅保留相机核心组件引用（删除所有回正相关变量）
-    private CinemachineFreeLook _cinemachineCam;
+    private CinemachineVirtualCameraBase _cinemachineCam;
     private Transform _followTarget;
 
     private void Start()
@@ -24,11 +24,11 @@ public class ThirdPersonCamera : MonoBehaviour
         }
 
         _followTarget = player.transform;
-        _cinemachineCam = cameraObj.GetComponent<CinemachineFreeLook>();
+        _cinemachineCam = cameraObj.GetComponent<CinemachineVirtualCameraBase>();
 
         if (_cinemachineCam == null)
         {
-            Debug.LogError("相机对象上未找到CinemachineFreeLook组件！");
+            Debug.LogError("相机对象上未找到CinemachineVirtualCameraBase组件！");
             return;
         }
 

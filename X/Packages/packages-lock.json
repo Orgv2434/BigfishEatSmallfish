@@ -10,15 +10,6 @@
       },
       "url": "https://packages.unity.cn"
     },
-    "com.unity.cinemachine": {
-      "version": "2.10.4",
-      "depth": 0,
-      "source": "registry",
-      "dependencies": {
-        "com.unity.test-framework": "1.1.31"
-      },
-      "url": "https://packages.unity.cn"
-    },
     "com.unity.cloud.gltfast": {
       "version": "6.8.0",
       "depth": 1,
@@ -226,9 +217,20 @@
     },
     "com.unity.settings-manager": {
       "version": "2.0.1",
-      "depth": 2,
+      "depth": 1,
       "source": "registry",
       "dependencies": {},
+      "url": "https://packages.unity.cn"
+    },
+    "com.unity.splines": {
+      "version": "2.8.2",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {
+        "com.unity.mathematics": "1.2.1",
+        "com.unity.modules.imgui": "1.0.0",
+        "com.unity.settings-manager": "1.0.3"
+      },
       "url": "https://packages.unity.cn"
     },
     "com.unity.test-framework": {
