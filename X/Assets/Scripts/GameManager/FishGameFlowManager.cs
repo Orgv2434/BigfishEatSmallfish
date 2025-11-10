@@ -77,9 +77,11 @@ public class FishGameFlowManager : MonoBehaviour
 
     [Header("设置面板UI")]
     public GameObject SettingsUI;
+    public Button btnSettingsReturn;
 
     [Header("开发人员UI")]
     public GameObject DevelepersUI;
+    public Button btnDevelopersReturn;
 
     #endregion
 
@@ -233,6 +235,13 @@ public class FishGameFlowManager : MonoBehaviour
         btnSettings.onClick.AddListener(OpenSettingsPanel);
         btnDevelopers.onClick.AddListener(OpenDevelopersPanel);
 
+        // 新增 Return 按钮事件
+        if (btnSettingsReturn != null)
+            btnSettingsReturn.onClick.AddListener(CloseSettingsPanel);
+
+        if (btnDevelopersReturn != null)
+            btnDevelopersReturn.onClick.AddListener(CloseDevelopersPanel);
+
         // 游戏中
         btnPause.onClick.AddListener(() => SwitchToState(GameState.GamePaused));
 
@@ -273,6 +282,19 @@ public class FishGameFlowManager : MonoBehaviour
             Debug.LogError("DevelepersUI未找到！");
         }
     }
+
+    private void CloseSettingsPanel()
+    {
+        if (SettingsUI != null)
+            SettingsUI.SetActive(false);
+    }
+
+    private void CloseDevelopersPanel()
+    {
+        if (DevelepersUI != null)
+            DevelepersUI.SetActive(false);
+    }
+
 
     public void QuitGame()
     {
