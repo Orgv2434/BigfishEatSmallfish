@@ -21,7 +21,7 @@ public class MusicManager : MonoBehaviour
     public AudioClip hudun;
     public AudioClip eatskillfish;
     public AudioClip gainhealth;
-         
+
     private void Awake()
     {
         if (Instance == null)
@@ -39,10 +39,22 @@ public class MusicManager : MonoBehaviour
 
     #region 具体音效播放
     // Update is called once per frame
+    
+    public void PlayBGM()
+    {
+        BGM.Play();
+        BGM2.Play();
+    }
     public void StopBGM()
     {
         BGM.Stop();
         BGM2.Stop();
+    }
+
+    public void PauseBGM()
+    {
+        BGM.Pause();
+        BGM2.Pause();
     }
     public void Exp()
     {

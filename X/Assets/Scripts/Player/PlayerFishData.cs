@@ -16,6 +16,8 @@ public class PlayerFishData : MonoBehaviour
     public float currentSize;
     public float moveSpeed = 5f;
 
+    private float survivalTime = 0;
+
     [Header("生命设置")]
     public float healthLossRate = 1f;
     public float expToHealthRate = 0.2f;
@@ -39,13 +41,13 @@ public class PlayerFishData : MonoBehaviour
 
     [Header("引用配置")]
     public ThirdPersonMove thirdPersonMove;
-   
+
 
     // 事件通知
     public Action<float> OnHealthChanged;
     public Action<int, int> OnExpChanged;
     public Action<FishTier> OnTierChanged;
-    
+
     public Action<float> OnSizeChanged;
     public Action<float> OnSpeedChanged;
 
@@ -56,7 +58,7 @@ public class PlayerFishData : MonoBehaviour
     public event Action<FishTier> OnTierUpgraded;
 
     //bgm
-  
+
     private void Awake()
     {
         if (Instance == null)
@@ -72,13 +74,19 @@ public class PlayerFishData : MonoBehaviour
         _currentExpMultiplier = baseExpMultiplier;
         _currentRotateSpeed = baseRotateSpeed;
         _skillSystem = GetComponent<FishSkillSystem>();
-        
+
 
         // 初始化移动速度
         if (thirdPersonMove != null)
             thirdPersonMove.UpdateSpeedStats(moveSpeed, _currentRotateSpeed);
         else
             Debug.LogWarning("未赋值ThirdPersonMove脚本！速度更新将失效");
+
+        // 重新开始时重置存活时间
+        if(survivalTime!=0)
+        {
+            survivalTime = 0;
+        }
     }
 
     private void Update()
@@ -86,17 +94,11 @@ public class PlayerFishData : MonoBehaviour
         // 随时间扣血（保留原有逻辑）
         currentHealth = Mathf.Max(0, currentHealth - healthLossRate * Time.deltaTime);
         OnHealthChanged?.Invoke(currentHealth / maxHealth);
-
+        survivalTime += Time.deltaTime;
         // 死亡检测
         if (currentHealth <= 0)
         {
-            
-            Debug.Log("玩家鱼死亡！");
-            Destroy(gameObject);
-
-            // 音效
-            MusicManager.Instance.Die();
-            MusicManager.Instance.StopBGM();
+            DestroyPlayerFish();
         }
     }
 
@@ -110,24 +112,24 @@ public class PlayerFishData : MonoBehaviour
     // 加经验逻辑（保留并优化）
     public void GainExp(int baseExp)
     {
-       
+
         int actualExp = Mathf.RoundToInt(baseExp * _currentExpMultiplier);
         currentExp += actualExp;
 
         // 经验与回血通知
         OnExpChanged?.Invoke(currentExp, GetRequiredExpForNextTier());
-          float restoredHealth = actualExp * expToHealthRate;
+        float restoredHealth = actualExp * expToHealthRate;
         GainHealth(restoredHealth);
         Debug.Log($"获得经验：{actualExp}，回复血量：{restoredHealth}");
 
         // 屏幕特效
-         string coloredText = 
-        $"<color=yellow>+{actualExp} Exp</color>  " +  // 经验部分（黄色）
-        $"<color=green>+{restoredHealth} HP</color>"; // 血量部分（红色）
-        
+        string coloredText =
+       $"<color=yellow>+{actualExp} Exp</color>  " +  // 经验部分（黄色）
+       $"<color=green>+{restoredHealth} HP</color>"; // 血量部分（红色）
+
         // 调用自定义提示方法，传入拼接好的富文本
-        ExpPopupManager.Instance.ShowCustomPopup(transform.position, coloredText, Color.white); 
-        
+        ExpPopupManager.Instance.ShowCustomPopup(transform.position, coloredText, Color.white);
+
         // 实时更新属性
         UpdateStatsByExp(actualExp);
         CheckTierUpgrade();
@@ -149,7 +151,7 @@ public class PlayerFishData : MonoBehaviour
         // 同步移动脚本速度
         if (thirdPersonMove != null)
             thirdPersonMove.UpdateSpeedStats(newMoveSpeed, _currentRotateSpeed);
-        
+
         OnSpeedChanged?.Invoke(newMoveSpeed);
     }
 
@@ -161,7 +163,7 @@ public class PlayerFishData : MonoBehaviour
         {
             tierIndex++;
             currentTier = (FishTier)tierIndex;
-             OnTierUpgraded?.Invoke(currentTier);
+            OnTierUpgraded?.Invoke(currentTier);
             // 升级特效与属性提升
             FishTierEffect tierEffect = GetComponent<FishTierEffect>();
             if (tierEffect != null)
@@ -185,7 +187,7 @@ public class PlayerFishData : MonoBehaviour
             OnSizeChanged?.Invoke(currentSize);
             OnSpeedChanged?.Invoke(finalMoveSpeed);
             OnTierChanged?.Invoke(currentTier);
-            FishEventSystem.BroadcastTierChanged(currentTier); 
+            FishEventSystem.BroadcastTierChanged(currentTier);
             OnHealthChanged?.Invoke(currentHealth / maxHealth);
             HandleTierUpgrade();
 
@@ -193,7 +195,7 @@ public class PlayerFishData : MonoBehaviour
             MusicManager.Instance.Upgrade();
         }
     }
-    
+
     public FishTier GetCurrentTier()
     {
         return currentTier;
@@ -225,12 +227,12 @@ public class PlayerFishData : MonoBehaviour
         // 比自己小或同挡位的鱼：吃掉并通知鱼群重生
         if (otherTier < currentTier || (otherTier == currentTier && otherTag != "head"))
         {
-         
+
             Debug.Log(otherTier < currentTier ? "吃掉更小挡位的鱼" : "吃掉同挡位鱼的尾部/身体");
-            
+
             GlobalFlock fishFlock = otherFish.gameObject.transform.parent.parent?.GetComponent<GlobalFlock>();
             if (fishFlock != null)
-                fishFlock.OnFishEaten(otherFish.gameObject); 
+                fishFlock.OnFishEaten(otherFish.gameObject);
             else
                 Destroy(otherFish.gameObject); // 异常情况：直接销毁
 
@@ -295,4 +297,18 @@ public class PlayerFishData : MonoBehaviour
     {
         Debug.Log($"玩家鱼升级到 {currentTier} 挡位！");
     }
+    public void DestroyPlayerFish()
+    {
+        Debug.Log("玩家鱼死亡！");
+        // 音效
+        MusicManager.Instance.Die();
+        MusicManager.Instance.StopBGM();
+        FishGameFlowManager.Instance.tex_survivalTime.text = $"{Mathf.FloorToInt(survivalTime)} ";
+        FishGameFlowManager.Instance.tex_finalLevel.text = $"{(int)currentTier+1} ";
+        FishGameFlowManager.Instance.GetVerdictText(survivalTime, (int)currentTier);
+        FishGameFlowManager.Instance.TriggerGameOver();
+        Destroy(gameObject);
+    }
+    
+
 }

@@ -2,7 +2,7 @@ using UnityEngine;
 using DG.Tweening;
 using UnityEngine.UI;
 
-public class PauseUIImageExpand : MonoBehaviour
+public class PageUIAppearEffect : MonoBehaviour
 {
     [Header("展开目标 Image")]
     public RectTransform targetImage;      // PauseUI 的子 Image
@@ -42,12 +42,12 @@ public class PauseUIImageExpand : MonoBehaviour
 
     public void Play()
     {
-        // 展开 Image
+        // 展开 Image（添加 SetUpdate(true) 使其不受 Time.timeScale 影响）
         targetImage.DOSizeDelta(originalSize, expandDuration)
             .SetEase(expandEase)
+            .SetUpdate(true) // 关键：切换到非缩放时间
             .OnComplete(() =>
             {
-                // 展开完成后播放子元素淡入
                 PlayChildrenFade();
             });
     }
@@ -60,6 +60,7 @@ public class PauseUIImageExpand : MonoBehaviour
             cg.DOFade(1f, childFadeDuration)
                 .SetDelay(i * childFadeDelay)
                 .SetEase(fadeEase)
+                .SetUpdate(true) // 关键：切换到非缩放时间
                 .OnStart(() =>
                 {
                     cg.interactable = true;
