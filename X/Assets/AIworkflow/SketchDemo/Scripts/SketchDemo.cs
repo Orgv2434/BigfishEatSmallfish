@@ -46,7 +46,8 @@ public class SketchDemo : MonoBehaviour
         "\r\nMorandi color scheme, soft harmonious colors," +
         "\r\nlow color contrast, gentle tonal transitions, soothing color palette," +
         "\r\nsolid colors, smooth surface, soft lighting," +
-        "\r\nfish facing left, head on left side, tail on right side, oriented to the left";
+        "\r\nfish facing left, head on left side, tail on right side, oriented to the left"+
+        "\r\ncompletely lateral view, direct side angle, pure side profile";        // 强化角度描述
 
         if (string.IsNullOrEmpty(setPrompts_back))
             setPrompts_back = "pure white background, single fish subject only, no background elements," +
@@ -60,6 +61,7 @@ public class SketchDemo : MonoBehaviour
                 "\r\ngarish colors, electric colors, fluorescent tones, pure primary colors," +
                 "\r\nlineart, outline, bold lines, draw lines, sketch style, ink, cartoon outline," +
                 "\r\nfish facing right, head on right side, tail on left side, reversed orientation";
+                
     }
 
     void InitUI()

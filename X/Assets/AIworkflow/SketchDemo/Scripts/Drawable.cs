@@ -25,6 +25,13 @@ public class Drawable : MonoBehaviour
     Sprite drawable_sprite;
     Texture2D drawable_texture;
 
+    //底图+透明画布
+    [Header("Drawing Canvas Settings")]
+    public int canvasWidth = 1024;
+    public int canvasHeight = 1024;
+    public Color canvasBackgroundColor = new Color(0, 0, 0, 0); // 透明
+
+
     Vector2 previous_drag_position;
     Color[] clean_colours_array;
     Color transparent;
@@ -84,24 +91,48 @@ public class Drawable : MonoBehaviour
         // DEFAULT BRUSH SET HERE
         current_brush = PenBrush;
 
-        UpdateDrawableSprite();
+        //UpdateDrawableSprite();
 
-        // Initialize clean pixels to use
-        clean_colours_array = new Color[(int)drawable_sprite.rect.width * (int)drawable_sprite.rect.height];
-        for (int x = 0; x < clean_colours_array.Length; x++)
-            clean_colours_array[x] = Reset_Colour;
+        //// Initialize clean pixels to use
+        //clean_colours_array = new Color[(int)drawable_sprite.rect.width * (int)drawable_sprite.rect.height];
+        //for (int x = 0; x < clean_colours_array.Length; x++)
+        //    clean_colours_array[x] = Reset_Colour;
 
-        // Should we reset our canvas image when we hit play in the editor?
-        if (Reset_Canvas_On_Play)
-            ResetCanvas();
+        //// Should we reset our canvas image when we hit play in the editor?
+        //if (Reset_Canvas_On_Play)
+        //    ResetCanvas();
+
+        //底图+透明画布
+        // 创建透明可绘画贴图，而不是使用底图
+        drawable_texture = new Texture2D(canvasWidth, canvasHeight, TextureFormat.RGBA32, false);
+        drawable_texture.filterMode = FilterMode.Point;
+
+        // 创建清空用的颜色数组
+        clean_colours_array = new Color[canvasWidth * canvasHeight];
+        for (int i = 0; i < clean_colours_array.Length; i++)
+            clean_colours_array[i] = canvasBackgroundColor;
+
+        ResetCanvas();
+
+        // 创建对应的 Sprite 并赋给 SpriteRenderer
+        drawable_sprite = Sprite.Create(
+            drawable_texture,
+            new Rect(0, 0, canvasWidth, canvasHeight),
+            new Vector2(0.5f, 0.5f),
+            100f,                         // 像素每单位，可调整
+            0,
+            SpriteMeshType.FullRect
+        );
+
+        GetComponent<SpriteRenderer>().sprite = drawable_sprite;
     }
 
     private void OnDestroy()
     {
-        if (drawable_texture != null)
-        {
-            ResetCanvas();
-        }
+        //if (drawable_texture != null)
+        //{
+        //    ResetCanvas();
+        //}
     }
 
     public void UpdateDrawableSprite()
