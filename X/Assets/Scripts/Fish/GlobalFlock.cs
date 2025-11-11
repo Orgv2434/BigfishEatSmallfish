@@ -265,6 +265,7 @@ namespace DistantLands
 
             FishSchoolIdentifier identifier = eatenFish.GetComponent<FishSchoolIdentifier>();
             allFish.Remove(eatenFish);
+             MusicManager.Instance.Exp();
 
             if (identifier != null && schoolFishMap.ContainsKey(identifier.schoolName))
                 schoolFishMap[identifier.schoolName].Remove(eatenFish);

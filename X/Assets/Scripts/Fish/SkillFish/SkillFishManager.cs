@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using DistantLands;
+using System.Linq;
 
 [RequireComponent(typeof(Transform))]
 public class SkillFishManager : GlobalFlock
@@ -145,11 +146,28 @@ public class SkillFishManager : GlobalFlock
     #region 重写方法
     public override void OnFishEaten(GameObject eatenFish)
     {
-        base.OnFishEaten(eatenFish);
+                  if (eatenFish == null || !allFish.Contains(eatenFish)) return;
+
+            FishSchoolIdentifier identifier = eatenFish.GetComponent<FishSchoolIdentifier>();
+            allFish.Remove(eatenFish);
+
+
+            if (identifier != null && schoolFishMap.ContainsKey(identifier.schoolName))
+                schoolFishMap[identifier.schoolName].Remove(eatenFish);
+
+            var schoolSetting = allSchoolSettings.FirstOrDefault(s => s.schoolName == identifier?.schoolName);
+        if (schoolSetting != null)
+            StartCoroutine(RespawnFishAfterDelay(schoolSetting));
+                
+
+        ReturnFishToPool(eatenFish);
+            
 
         var fishAI = eatenFish.GetComponent<SkillFishAI>();
         if (fishAI != null)
             activeFishes.Remove(fishAI);
+        // 音效
+        MusicManager.Instance.EatSkillFish();
     }
     #endregion
 

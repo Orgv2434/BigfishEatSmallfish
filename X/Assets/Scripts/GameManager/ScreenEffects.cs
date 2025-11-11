@@ -29,6 +29,7 @@ public class ScreenEffects : MonoBehaviour
             transitionAnimator.SetBool("Fadeout", false);
 
             transitionAnimator.SetBool("Fadein", true);
+            MusicManager.Instance.FindAllButtonsAndBindClickSound();//为新场景中的按钮绑定点击音效
             switch (sceneIndex)
             {
                 case 0:

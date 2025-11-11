@@ -94,7 +94,7 @@ public class ThirdPersonMove : MonoBehaviour
     /// </summary>
     private void HandleCooldown()
     {
-        if (_isOnCooldown)
+        if (_isOnCooldown) 
         {
             _cooldownTimer += Time.deltaTime;
             if (_cooldownTimer >= sprintCooldown)
@@ -163,6 +163,7 @@ public class ThirdPersonMove : MonoBehaviour
         if (_isSprintingInput && !_isOnCooldown && !_isSprinting && haveDush)
         {
             _isSprinting = true;
+            MusicManager.Instance.Dush();
             StartCoroutine(ApplySprint());
         }
         // 重置输入状态（避免持续触发）

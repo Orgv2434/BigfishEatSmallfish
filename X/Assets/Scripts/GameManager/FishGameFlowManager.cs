@@ -108,6 +108,7 @@ public class FishGameFlowManager : MonoBehaviour
         SwitchToState(GameState.MainMenu);
         BindUIEvents();
         BindInputEvents();
+        MusicManager.Instance.FindAllButtonsAndBindClickSound();
     }
 
     private void HideAllUI()
@@ -474,7 +475,11 @@ private IEnumerator ProcessGeneratedModel()
 
     if (btnEnterGame != null)
     {
-        btnEnterGame.gameObject.SetActive(true);
+            btnEnterGame.gameObject.SetActive(true);
+
+            // 音效
+
+            MusicManager.Instance.DrawOver();
         Debug.Log("[ProcessGeneratedModel] 已激活进入游戏按钮");
     }
     else

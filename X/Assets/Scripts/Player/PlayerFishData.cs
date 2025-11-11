@@ -90,9 +90,13 @@ public class PlayerFishData : MonoBehaviour
         // 死亡检测
         if (currentHealth <= 0)
         {
-            MusicManager.instance.Die();
+            
             Debug.Log("玩家鱼死亡！");
             Destroy(gameObject);
+
+            // 音效
+            MusicManager.Instance.Die();
+            MusicManager.Instance.StopBGM();
         }
     }
 
@@ -106,7 +110,7 @@ public class PlayerFishData : MonoBehaviour
     // 加经验逻辑（保留并优化）
     public void GainExp(int baseExp)
     {
-        MusicManager.instance.Exp();
+       
         int actualExp = Mathf.RoundToInt(baseExp * _currentExpMultiplier);
         currentExp += actualExp;
 
@@ -158,7 +162,6 @@ public class PlayerFishData : MonoBehaviour
             tierIndex++;
             currentTier = (FishTier)tierIndex;
              OnTierUpgraded?.Invoke(currentTier);
-            MusicManager.instance.Upgrade();
             // 升级特效与属性提升
             FishTierEffect tierEffect = GetComponent<FishTierEffect>();
             if (tierEffect != null)
@@ -183,9 +186,11 @@ public class PlayerFishData : MonoBehaviour
             OnSpeedChanged?.Invoke(finalMoveSpeed);
             OnTierChanged?.Invoke(currentTier);
             FishEventSystem.BroadcastTierChanged(currentTier); 
-
             OnHealthChanged?.Invoke(currentHealth / maxHealth);
             HandleTierUpgrade();
+
+            // 音效处理
+            MusicManager.Instance.Upgrade();
         }
     }
     
@@ -220,10 +225,10 @@ public class PlayerFishData : MonoBehaviour
         // 比自己小或同挡位的鱼：吃掉并通知鱼群重生
         if (otherTier < currentTier || (otherTier == currentTier && otherTag != "head"))
         {
-            MusicManager.instance.Eat();
+         
             Debug.Log(otherTier < currentTier ? "吃掉更小挡位的鱼" : "吃掉同挡位鱼的尾部/身体");
             
-            GlobalFlock fishFlock = otherFish.gameObject.transform.parent?.GetComponent<GlobalFlock>();
+            GlobalFlock fishFlock = otherFish.gameObject.transform.parent.parent?.GetComponent<GlobalFlock>();
             if (fishFlock != null)
                 fishFlock.OnFishEaten(otherFish.gameObject); 
             else
@@ -244,6 +249,8 @@ public class PlayerFishData : MonoBehaviour
     public void SetTemporaryExpMultiplier(float multiplier, float duration)
     {
         StartCoroutine(ResetExpMultiplier(multiplier, duration));
+        // 音效
+        MusicManager.Instance.PlusExp();
     }
 
     private IEnumerator ResetExpMultiplier(float tempMulti, float duration)
@@ -270,6 +277,9 @@ public class PlayerFishData : MonoBehaviour
         if (_shieldCount > 0)
         {
             _shieldCount--;
+
+            // 音效
+            MusicManager.Instance.HuDun();
             return true;
         }
         return false;
