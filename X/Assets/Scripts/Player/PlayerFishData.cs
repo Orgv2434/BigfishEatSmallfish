@@ -39,6 +39,7 @@ public class PlayerFishData : MonoBehaviour
 
     [Header("引用配置")]
     public ThirdPersonMove thirdPersonMove;
+   
 
     // 事件通知
     public Action<float> OnHealthChanged;
@@ -53,6 +54,9 @@ public class PlayerFishData : MonoBehaviour
     private FishSkillSystem _skillSystem;
     // 定义挡位变化事件（参数为新挡位）
     public event Action<FishTier> OnTierUpgraded;
+
+    //bgm
+  
     private void Awake()
     {
         if (Instance == null)
@@ -68,6 +72,7 @@ public class PlayerFishData : MonoBehaviour
         _currentExpMultiplier = baseExpMultiplier;
         _currentRotateSpeed = baseRotateSpeed;
         _skillSystem = GetComponent<FishSkillSystem>();
+        
 
         // 初始化移动速度
         if (thirdPersonMove != null)
@@ -85,6 +90,7 @@ public class PlayerFishData : MonoBehaviour
         // 死亡检测
         if (currentHealth <= 0)
         {
+            MusicManager.instance.Die();
             Debug.Log("玩家鱼死亡！");
             Destroy(gameObject);
         }
@@ -100,6 +106,7 @@ public class PlayerFishData : MonoBehaviour
     // 加经验逻辑（保留并优化）
     public void GainExp(int baseExp)
     {
+        MusicManager.instance.Exp();
         int actualExp = Mathf.RoundToInt(baseExp * _currentExpMultiplier);
         currentExp += actualExp;
 
@@ -151,7 +158,7 @@ public class PlayerFishData : MonoBehaviour
             tierIndex++;
             currentTier = (FishTier)tierIndex;
              OnTierUpgraded?.Invoke(currentTier);
-
+            MusicManager.instance.Upgrade();
             // 升级特效与属性提升
             FishTierEffect tierEffect = GetComponent<FishTierEffect>();
             if (tierEffect != null)
@@ -213,6 +220,7 @@ public class PlayerFishData : MonoBehaviour
         // 比自己小或同挡位的鱼：吃掉并通知鱼群重生
         if (otherTier < currentTier || (otherTier == currentTier && otherTag != "head"))
         {
+            MusicManager.instance.Eat();
             Debug.Log(otherTier < currentTier ? "吃掉更小挡位的鱼" : "吃掉同挡位鱼的尾部/身体");
             
             GlobalFlock fishFlock = otherFish.gameObject.transform.parent?.GetComponent<GlobalFlock>();
