@@ -337,13 +337,13 @@ private IEnumerator ProcessGeneratedModel()
     
     if (string.IsNullOrEmpty(fullModelPath))
     {
-        Debug.LogError("[ProcessGeneratedModel] 模型路径为空！ModelHandler未正确记录下载路径");
+        Debug.Log("[ProcessGeneratedModel] 模型路径为空！ModelHandler未正确记录下载路径");
         yield break;
     }
 
     if (!File.Exists(fullModelPath))
     {
-        Debug.LogError($"[ProcessGeneratedModel] 模型文件不存在！路径: {fullModelPath} 请检查文件是否被删除或路径是否正确");
+        Debug.Log($"[ProcessGeneratedModel] 模型文件不存在！路径: {fullModelPath} 请检查文件是否被删除或路径是否正确");
         yield break;
     }
     Debug.Log("[ProcessGeneratedModel] 模型文件存在，开始加载流程");
