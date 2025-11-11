@@ -15,7 +15,7 @@ Material:
   m_InvalidKeywords: []
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 1
-  m_DoubleSidedGI: 0
+  m_DoubleSidedGI: 1
   m_CustomRenderQueue: -1
   stringTagMap: {}
   disabledShaderPasses: []
@@ -24,7 +24,7 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
     - _Atlas:
-        m_Texture: {fileID: 0}
+        m_Texture: {fileID: -5560451644740671224, guid: b535d8b38983f254d8fe98acd0615d14, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _BumpMap:
@@ -90,15 +90,18 @@ Material:
     - _GradientSmoothness1: 0.5
     - _MainWaveAmount: 0.3
     - _MainWaveScale: 1
+    - _MarkerSize: 0.1
     - _Metallic: 0
     - _Mode: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.02
+    - _ShowOriginMarker: 1
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _UVSec: 0
     - _WaveHeightMultiplier: 1
+    - _WaveOriginZ: 0.4
     - _WaveSpeed: 2
     - _ZWrite: 1
     - __dirty: 0
@@ -106,9 +109,11 @@ Material:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _Emmision: {r: 0, g: 0, b: 0, a: 1}
+    - _HeadPosition: {r: 0, g: 0, b: 0, a: 0}
     - _MainColor: {r: 0.3160377, g: 1, b: 0.695684, a: 1}
-    - _TimeScale: {r: 1, g: 1, b: 2.4, a: 0}
+    - _MarkerColor: {r: 1, g: 0, b: 0, a: 1}
+    - _TimeScale: {r: 1, g: 1, b: 0, a: 0}
     - _TopColor: {r: 0.3160377, g: 1, b: 0.695684, a: 1}
-    - _WaveAmount: {r: 0.72, g: 0.74, b: 4.55, a: 0}
-    - _WaveWidth: {r: 5, g: 4, b: 12.41, a: 0}
+    - _WaveAmount: {r: 0.5, g: 0.1, b: 0, a: 0}
+    - _WaveWidth: {r: 4.87, g: 4, b: 0, a: 0}
   m_BuildTextureStacks: []
