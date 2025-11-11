@@ -8,6 +8,7 @@ Shader "Distant Lands/Stylized Fish"
 		_WaveAmount("Wave Amount", Vector) = (0,0,0,0)
 		_TimeScale("Time Scale", Vector) = (1,1,0,0)
 		_WaveWidth("Wave Width", Vector) = (1,1,0,0)
+		_WaveOriginZ("Wave Origin Z (调节z轴原点)", Float) = 0.0 // 新增：z轴摆动参考原点
 		[HideInInspector] _texcoord( "", 2D ) = "white" {}
 		[HideInInspector] __dirty( "", Int ) = 1
 	}
@@ -28,9 +29,9 @@ Shader "Distant Lands/Stylized Fish"
 		uniform float2 _WaveWidth;
 		uniform float2 _TimeScale;
 		uniform float2 _WaveAmount;
+		uniform float _WaveOriginZ; // 声明z轴原点参数
 		uniform sampler2D _Atlas;
 		uniform float4 _Atlas_ST;
-
 
 		float3 RotateAroundAxis( float3 center, float3 original, float3 u, float angle )
 		{
@@ -51,15 +52,16 @@ Shader "Distant Lands/Stylized Fish"
 			return mul( finalMatrix, original ) + center;
 		}
 
-
 		void vertexDataFunc( inout appdata_full v, out Input o )
 		{
 			UNITY_INITIALIZE_OUTPUT( Input, o );
 			float3 ase_vertex3Pos = v.vertex.xyz;
-			float temp_output_58_0 = abs( ase_vertex3Pos.z );
+			// 基于自定义z轴原点计算顶点距离
+			float temp_output_58_0 = abs( ase_vertex3Pos.z - _WaveOriginZ );
 			float mulTime39 = _Time.y * _TimeScale.x;
 			float3 ase_objectScale = float3( length( unity_ObjectToWorld[ 0 ].xyz ), length( unity_ObjectToWorld[ 1 ].xyz ), length( unity_ObjectToWorld[ 2 ].xyz ) );
-			float3 temp_output_40_0 = ( ( ase_objectScale * float3( 50,50,50 ) ) + ( 0.0 - temp_output_58_0 ) );
+			// 波动相位融入自定义原点
+			float3 temp_output_40_0 = ( ( ase_objectScale * float3( 50,50,50 ) ) + ( _WaveOriginZ - temp_output_58_0 ) );
 			float3 rotatedValue64 = RotateAroundAxis( float3( 0,0,0 ), ase_vertex3Pos, float3(0,1,0), ( temp_output_58_0 * sin( ( _WaveWidth.x * ( mulTime39 + temp_output_40_0 ) ) ) * _WaveAmount.x ).x );
 			float mulTime70 = _Time.y * _TimeScale.y;
 			float3 rotatedValue60 = RotateAroundAxis( float3( 0,0,0 ), ase_vertex3Pos, float3(0,0,1), ( _WaveAmount.y * sin( ( _WaveWidth.y * ( mulTime70 + temp_output_40_0 ) ) ) * temp_output_58_0 ).x );
@@ -103,6 +105,7 @@ Node;AmplifyShaderEditor.Vector3Node;53;-1637.805,-107.3212;Inherit;False;Consta
 Node;AmplifyShaderEditor.SimpleMultiplyOpNode;65;-1621.844,346.3925;Inherit;False;3;3;0;FLOAT;0;False;1;FLOAT3;0,0,0;False;2;FLOAT;0;False;1;FLOAT3;0
 Node;AmplifyShaderEditor.Vector3Node;61;-1644.046,70.84964;Inherit;False;Constant;_Z;Z;2;0;Create;True;0;0;0;False;0;False;0,0,1;0,0,0;0;4;FLOAT3;0;FLOAT;1;FLOAT;2;FLOAT;3
 Node;AmplifyShaderEditor.PosVertexDataNode;79;-1215.066,664.2933;Inherit;False;0;0;5;FLOAT3;0;FLOAT;1;FLOAT;2;FLOAT;3;FLOAT;4
+Node;AmplifyShaderEditor.FloatNode;82;-2400.5,750.2;Inherit;False;Property;_WaveOriginZ;Wave Origin Z (调节z轴原点);4;0;Create;True;0;0;0;False;0;False;0;10;-5;5;0;1;FLOAT;0
 Node;AmplifyShaderEditor.RotateAboutAxisNode;64;-1311.251,230.9231;Inherit;False;False;4;0;FLOAT3;0,0,0;False;1;FLOAT;0;False;2;FLOAT3;0,0,0;False;3;FLOAT3;0,0,0;False;1;FLOAT3;0
 Node;AmplifyShaderEditor.RotateAboutAxisNode;60;-1296.151,476.0071;Inherit;False;False;4;0;FLOAT3;0,0,0;False;1;FLOAT;0;False;2;FLOAT3;0,0,0;False;3;FLOAT3;0,0,0;False;1;FLOAT3;0
 Node;AmplifyShaderEditor.SimpleSubtractOpNode;77;-908.5732,472.3282;Inherit;False;2;0;FLOAT3;0,0,0;False;1;FLOAT3;0,0,0;False;1;FLOAT3;0

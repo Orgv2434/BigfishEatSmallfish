@@ -93,10 +93,12 @@ Material:
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossyReflections: 1
+    - _MarkerSize: 0.1
     - _Metallic: 0
     - _Mode: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.02
+    - _ShowOriginMarker: 1
     - _Size: 1
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
@@ -108,12 +110,15 @@ Material:
     - _TimeScale: 1
     - _UVSec: 0
     - _WaveAmount: 0.4
+    - _WaveOriginZ: 0
     - _WaveSpeed: 2
     - _ZWrite: 1
     - __dirty: 0
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
+    - _HeadPosition: {r: 0, g: 0, b: 0, a: 0}
+    - _MarkerColor: {r: 1, g: 0, b: 0, a: 1}
     - _TimeScale: {r: 1, g: 1, b: 0, a: 0}
     - _WaveAmount: {r: 0.5, g: 0.2, b: 0, a: 0}
     - _WaveWidth: {r: 5, g: 4, b: 0, a: 0}
