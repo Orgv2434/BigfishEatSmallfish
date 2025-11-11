@@ -7,9 +7,9 @@ public class SkillFishAI : MonoBehaviour
     // 基础移动参数（Inspector可编辑）
     // ==========================================
     [Header("基础移动设置"), Tooltip("正常移动速度")]
-    public float originalSpeed = 2f;
+    public float originalSpeed = 1f;
     [Tooltip("转向速度（值越大转向越快）")]
-    public float rotationSpeed = 5f;
+    public float rotationSpeed = 4f;
     [Tooltip("正常状态下随机变向的时间间隔（范围）")]
     public Vector2 directionChangeIntervalRange = new Vector2(2f, 4.5f);
     public Transform playerTransform;
@@ -20,9 +20,9 @@ public class SkillFishAI : MonoBehaviour
     // 玩家检测与逃窜参数（Inspector可编辑）
     // ==========================================
     [Header("玩家检测与逃窜设置"), Tooltip("检测到玩家的距离（进入此范围开始逃窜）")]
-    public float detectDistance = 5f;
+    public float detectDistance = 3f;
     [Tooltip("脱离玩家的安全距离（超出此范围停止逃窜）")]
-    public float safeDistance = 8f;
+    public float safeDistance = 5f;
     [Tooltip("最长逃窜持续时间（超过时间强制停止逃窜）")]
     public float fleeDuration = 3f;
     [Tooltip("逃窜时的速度倍数（正常速度 × 此值）")]

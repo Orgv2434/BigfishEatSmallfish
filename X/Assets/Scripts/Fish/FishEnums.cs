@@ -17,7 +17,7 @@ public enum FishSkillType
     ExpMultiplier,  // 经验倍率
     Dash,           // 冲刺
     Shield,         // 护盾
-    Camouflage      // 伪装
+    Heal      // 加血
 }
 [System.Serializable]
 // 鱼的属性类

@@ -1,156 +1,225 @@
 using UnityEngine;
+using UnityEngine.UI;
 using System;
 
 public class PlayerFishGUIManager : MonoBehaviour
-{
+{   
+    public static PlayerFishGUIManager Instance { get; private set; }
     private PlayerFishData _playerFishData;
 
-    // GUI 布局参数
-    public Vector2 guiOffset = new Vector2(20, 20);
-    public float elementSpacing = 20;
-    public float healthBarHeight = 20; // 血条高度
-    public float smoothTime = 0.3f;    // 平滑动画时间
+    // UI引用
+    [Header("UI组件引用")]
+    public Slider healthSlider;      // 血条Slider
+    public Slider expSlider;         // 经验条Slider
 
-    // 血条插值用的中间值
-    private float _targetHealthPercent;
-    private float _currentHealthPercent;
+    // 平滑动画参数
+    public float smoothTime = 0.3f;
     private float _healthVelocity;
+    private float _expVelocity;
 
-    // 新增：平滑后的血量值（用于文本显示）
-    private float _smoothedHealth;
+    // 挡位颜色映射（白、黄、紫、黑、红）
+    private readonly Color[] _tierColors = new Color[]
+    {
+        Color.white,       // 白
+        new Color(1, 1, 0), // 黄
+        new Color(0.8f, 0, 1), // 紫
+        Color.black,       // 黑
+        new Color(1, 0, 0)  // 红
+    };
 
     private void Awake()
     {
-        _playerFishData = GetComponent<PlayerFishData>();
-        if (_playerFishData == null)
+        if (Instance == null)
         {
-            Debug.LogError("缺少 PlayerFishData 组件！");
-            enabled = false;
+            Instance = this;
+            DontDestroyOnLoad(gameObject); // 确保单例不被销毁
         }
-    }
-
-    private void Start()
-    {
-        // 初始化血条百分比
-        _targetHealthPercent = _playerFishData.currentHealth / _playerFishData.maxHealth;
-        _currentHealthPercent = _targetHealthPercent;
-        _smoothedHealth = _playerFishData.currentHealth;
-
-        // 订阅血条变化事件
-        _playerFishData.OnHealthChanged += UpdateHealthTarget;
+        else
+        {
+            Destroy(gameObject); // 销毁重复实例
+        }
     }
 
     private void OnDestroy()
     {
-        // 取消事件订阅
-        _playerFishData.OnHealthChanged -= UpdateHealthTarget;
-    }
-
-    // 接收 PlayerFishData 的血量变化事件
-    private void UpdateHealthTarget(float newHealthPercent)
-    {
-        _targetHealthPercent = newHealthPercent;
+        // 安全取消事件订阅
+        if (_playerFishData != null)
+        {
+            _playerFishData.OnHealthChanged -= OnHealthChanged;
+            _playerFishData.OnExpChanged -= OnExpChanged;
+            _playerFishData.OnTierChanged -= OnTierChanged;
+        }
     }
 
     private void Update()
-    {
-        // 实时计算平滑后的血量（与血条动画同步）
-        _currentHealthPercent = Mathf.SmoothDamp(
-            _currentHealthPercent,
-            _targetHealthPercent,
-            ref _healthVelocity,
-            smoothTime
-        );
-        _smoothedHealth = _currentHealthPercent * _playerFishData.maxHealth;
+    {   
+        if(FishGameFlowManager.Instance == null) return;
+        if(FishGameFlowManager.Instance.CurrentState != FishGameFlowManager.GameState.GamePlaying)
+            return;
+
+        // 平滑更新血条
+        if (healthSlider != null && _playerFishData != null)
+        {
+            float targetHealth = Mathf.Max(0, _playerFishData.currentHealth);
+            healthSlider.value = Mathf.SmoothDamp(
+                healthSlider.value,
+                targetHealth,
+                ref _healthVelocity,
+                smoothTime
+            );
+        }
+
+        // 平滑更新经验条
+        if (expSlider != null && _playerFishData != null)
+        {
+            float targetExp = Mathf.Max(0, _playerFishData.currentExp);
+            expSlider.value = Mathf.SmoothDamp(
+                expSlider.value,
+                targetExp,
+                ref _expVelocity,
+                smoothTime
+            );
+        }
     }
 
-    private void OnGUI()
+    public void SetPlayerFishData()
     {
-        GUIStyle labelStyle = new GUIStyle(GUI.skin.label);
-        labelStyle.fontSize = 20;
-        labelStyle.normal.textColor = Color.white;
+        _playerFishData = FindObjectOfType<PlayerFishData>();
+        if (_playerFishData == null)
+        {
+            Debug.LogError("PlayerFishGUIManager：找不到PlayerFishData组件！");
+            enabled = false;
+            return;
+        }
 
-        // 血条样式（绿色）
-        GUIStyle healthBarStyle = new GUIStyle(GUI.skin.box);
-        healthBarStyle.normal.background = MakeTex(2, 2, new Color(0.2f, 0.8f, 0.2f));
+        UpdateHealthSliderRange();
+        UpdateExpSliderRange();
+        UpdateHealthDisplay();
+        UpdateExpDisplay();
 
-        float yPos = guiOffset.y;
-
-        // ---------- 生命值显示 ----------
-        // 1. 文本显示（使用平滑后的血量值）
-        GUI.Label(
-            new Rect(guiOffset.x, yPos, 200, 30),
-            $"生命值：{_smoothedHealth:F1}/{_playerFishData.maxHealth:F1}",
-            labelStyle
-        );
-
-        // 2. 绘制背景条
-        Rect bgBarRect = new Rect(
-            guiOffset.x,
-            yPos + 30,
-            200,
-            healthBarHeight
-        );
-        GUI.Box(bgBarRect, "", GUI.skin.box);
-
-        // 3. 绘制当前血条（带平滑动画）
-        Rect healthBarRect = new Rect(
-            bgBarRect.x,
-            bgBarRect.y,
-            bgBarRect.width * _currentHealthPercent,
-            bgBarRect.height
-        );
-        GUI.Box(healthBarRect, "", healthBarStyle);
-
-        yPos += 30 + healthBarHeight + elementSpacing;
-
-
-        // ---------- 经验值显示 ----------
-        int requiredExp = _playerFishData.GetRequiredExpForNextTier();
-        GUI.Label(
-            new Rect(guiOffset.x, yPos, 200, 30),
-            $"经验值：{_playerFishData.currentExp}/{requiredExp}",
-            labelStyle
-        );
-        yPos += elementSpacing;
-
-
-        // ---------- 挡位显示 ----------
-        GUI.Label(
-            new Rect(guiOffset.x, yPos, 200, 30),
-            $"当前挡位：{_playerFishData.currentTier}",
-            labelStyle
-        );
-        yPos += elementSpacing;
-
-
-        // ---------- 移速显示 ----------
-        GUI.Label(
-            new Rect(guiOffset.x, yPos, 200, 30),
-            $"移速：{_playerFishData.moveSpeed:F1}",
-            labelStyle
-        );
-        yPos += elementSpacing;
-
-
-        // ---------- 护盾次数显示 ----------
-        GUI.Label(
-            new Rect(guiOffset.x, yPos, 200, 30),
-            $"护盾次数：{_playerFishData._shieldCount}",
-            labelStyle
-        );
-        yPos += elementSpacing;
+        // 避免重复订阅
+        _playerFishData.OnHealthChanged -= OnHealthChanged;
+        _playerFishData.OnHealthChanged += OnHealthChanged;
+        _playerFishData.OnExpChanged -= OnExpChanged;
+        _playerFishData.OnExpChanged += OnExpChanged;
+        _playerFishData.OnTierChanged -= OnTierChanged;
+        _playerFishData.OnTierChanged += OnTierChanged;
     }
 
-    // 辅助方法：创建纯色纹理（用于血条颜色）
-    private Texture2D MakeTex(int width, int height, Color col)
+    private void OnHealthChanged(float healthPercent)
     {
-        Color[] pix = new Color[width * height];
-        for (int i = 0; i < pix.Length; i++)
-            pix[i] = col;
-        Texture2D result = new Texture2D(width, height);
-        result.SetPixels(pix);
-        result.Apply();
-        return result;
+        if (_playerFishData == null) return;
+        UpdateHealthSliderRange();
+        UpdateHealthDisplay();
+    }
+
+    private void OnExpChanged(int currentExp, int requiredExp)
+    {
+        if (_playerFishData == null) return;
+        UpdateExpSliderRange();
+        UpdateExpDisplay();
+    }
+
+    private void OnTierChanged(FishTier newTier)
+    {
+        UpdateExpBarColors();
+    }
+
+    private void UpdateHealthSliderRange()
+    {
+        if (healthSlider != null && _playerFishData != null)
+        {
+            healthSlider.maxValue = _playerFishData.maxHealth;
+        }
+    }
+
+    private void UpdateExpSliderRange()
+    {
+        if (expSlider != null && _playerFishData != null)
+        {
+            int requiredExp = _playerFishData.GetRequiredExpForNextTier();
+            expSlider.maxValue = requiredExp > 0 ? requiredExp : 0;
+        }
+    }
+
+    private void UpdateHealthDisplay()
+    {
+        if (healthSlider != null && _playerFishData != null)
+        {
+            healthSlider.maxValue = _playerFishData.maxHealth;
+            healthSlider.value = Mathf.Max(0, _playerFishData.currentHealth);
+        }
+    }
+
+    private void UpdateExpDisplay()
+    {
+        if (_playerFishData == null) return;
+        UpdateExpSliderRange();
+        if (expSlider != null)
+        {
+            expSlider.value = Mathf.Max(0, _playerFishData.currentExp);
+        }
+        UpdateExpBarColors();
+    }
+
+    // 核心修改：适配层级结构（Fill Area → Fill / Background）
+    private void UpdateExpBarColors()
+    {
+        // 层层空检查，不中断游戏逻辑
+        if (expSlider == null)
+        {
+            Debug.LogWarning("UpdateExpBarColors：expSlider未赋值！");
+            return;
+        }
+        if (_playerFishData == null)
+        {
+            Debug.LogWarning("UpdateExpBarColors：_playerFishData为空！");
+            return;
+        }
+
+        // 1. 先找到 Fill Area（所有子对象的父容器）
+        Transform fillArea = expSlider.transform.Find("Fill Area");
+        if (fillArea == null)
+        {
+            Debug.LogError("ExpSlider下未找到'Fill Area'子对象！请检查UI层级");
+            return;
+        }
+
+        // 2. 从 Fill Area 下找 Fill（填充条）
+        Transform fill = fillArea.Find("Fill");
+        if (fill == null)
+        {
+            Debug.LogError("Fill Area下未找到'Fill'子对象！请检查UI层级");
+            return;
+        }
+        if (!fill.TryGetComponent<Image>(out Image fillImage))
+        {
+            Debug.LogError("Fill对象缺少Image组件！");
+            return;
+        }
+
+        // 3. 从 Fill Area 下找 Background（背景条）
+        Transform background = fillArea.Find("Background");
+        if (background == null)
+        {
+            Debug.LogError("Fill Area下未找到'Background'子对象！请检查UI层级");
+            return;
+        }
+        if (!background.TryGetComponent<Image>(out Image backgroundImage))
+        {
+            Debug.LogError("Background对象缺少Image组件！");
+            return;
+        }
+
+        // 4. 应用挡位颜色（逻辑不变）
+        int tierIndex = (int)_playerFishData.currentTier;
+        if (tierIndex < 0 || tierIndex >= _tierColors.Length)
+        {
+            Debug.LogWarning($"当前挡位{tierIndex}无对应颜色！");
+            return;
+        }
+        Color tierColor = _tierColors[tierIndex];
+        fillImage.color = tierColor; // 填充色：当前挡位颜色
+        backgroundImage.color = new Color(tierColor.r * 0.3f, tierColor.g * 0.3f, tierColor.b * 0.3f, 0.5f); // 背景色：暗化半透明
     }
 }

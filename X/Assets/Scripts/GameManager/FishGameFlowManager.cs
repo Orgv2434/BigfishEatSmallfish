@@ -200,15 +200,27 @@ public class FishGameFlowManager : MonoBehaviour
                 }
                 else // 非调试模式
                 {
-
                     ScreenEffects.Instance.StartCoroutine(ScreenEffects.Instance.LoadScene(1)); // 加载准备场景
                     break;
                 }
 
             case GameState.GamePlaying:
                 if (inGameUI != null)
+                {
                     inGameUI.SetActive(true);
-                else inGameUI = GameObject.Find("InGameUI");
+
+                }
+                else
+                {
+                    inGameUI = GameObject.Find("InGameUI");
+                    Debug.LogError("没找到InGameUi!");
+                }
+                // 设置UI
+                if (PlayerFishGUIManager.Instance != null)
+                    PlayerFishGUIManager.Instance.SetPlayerFishData();
+                else 
+                    Debug.LogError("PlayerFishGUIManager.Instance is null!");
+                
                 // 进入游戏时不自动创建玩家，仅在明确触发时创建
                 break;
             case GameState.GamePaused:
@@ -556,7 +568,7 @@ public class FishGameFlowManager : MonoBehaviour
     /// 仅在点击"进入游戏"或"重新开始"时调用
     /// </summary>
     private void CreateNewPlayerFish()
-    {
+    { 
         // 先销毁已存在的玩家
         GameObject player = GameObject.FindWithTag("Player");
                 
@@ -570,23 +582,25 @@ public class FishGameFlowManager : MonoBehaviour
         {
             Debug.LogError("请赋值小鱼预制体！");
         }
-        if(playerFish == null)
+        if (playerFish == null)
         {
-           playerFish = Resources.Load<GameObject>(prefabPath);
+            playerFish = Resources.Load<GameObject>(prefabPath);
         }
+
         playerFish = Instantiate(playerFish, playerSpawnPoint.position, Quaternion.identity);
-      if(!isDebugMode)
+        if (!isDebugMode)
         {
 
-        // 删除旧模型
-        Destroy(playerFish.transform.GetChild(0).gameObject);
-        // 把新模型设置为第一个子物体
+            // 删除旧模型
+            Destroy(playerFish.transform.GetChild(0).gameObject);
+            // 把新模型设置为第一个子物体
 
-        fishPrefab = Instantiate(fishPrefab, playerSpawnPoint.position, Quaternion.identity);
-        fishPrefab.transform.SetParent(playerFish.transform);
-        fishPrefab.transform.SetSiblingIndex(0);
-        fishPrefab.SetActive(true);
+            fishPrefab = Instantiate(fishPrefab, playerSpawnPoint.position, Quaternion.identity);
+            fishPrefab.transform.SetParent(playerFish.transform);
+            fishPrefab.transform.SetSiblingIndex(0);
+            fishPrefab.SetActive(true);
         }
+        
         playerFish.SetActive(true); // 激活模型
 
         // 相机跟随逻辑保持不变
@@ -600,6 +614,7 @@ public class FishGameFlowManager : MonoBehaviour
         {
             Debug.LogError("场景中找不到ThirdPersonCamera组件！");
         }
+
     }
 
 

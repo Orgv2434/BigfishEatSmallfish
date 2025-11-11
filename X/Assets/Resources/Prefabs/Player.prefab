@@ -13,10 +13,9 @@ GameObject:
   - component: {fileID: 690084214218586567}
   - component: {fileID: 7933911760532807863}
   - component: {fileID: 8179138564064295046}
-  - component: {fileID: 6824705547684377968}
-  - component: {fileID: 767371878636735858}
   - component: {fileID: 239054795944909053}
   - component: {fileID: 4232815277183373033}
+  - component: {fileID: -6777016610383902195}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -81,6 +80,11 @@ MonoBehaviour:
   debugRayLength: 2
   debugRayColor: {r: 1, g: 0, b: 0, a: 1}
   haveDush: 0
+  DushSlider: {fileID: 0}
+  sliderName: DushCd
+  uiRootName: InGameUI
+  cooldownColor: {r: 0.44025147, g: 0.437273, b: 0.4028716, a: 1}
+  readyColor: {r: 0, g: 0, b: 1, a: 1}
 --- !u!143 &7933911760532807863
 CharacterController:
   m_ObjectHideFlags: 0
@@ -131,47 +135,23 @@ MonoBehaviour:
   baseSize: 1
   currentSize: 0
   moveSpeed: 5
+  modelTransform: {fileID: 3730052402888286747}
+  characterController: {fileID: 7933911760532807863}
+  colliderScaleMultiplier: 1
   healthLossRate: 1
   expToHealthRate: 1
   baseExpMultiplier: 0.5
   expToNextTier: 640000002c01000058020000e8030000
-  sizeIncreasePerTier: 0.5
-  sizeIncreasePerExp: 0.001
-  thirdPersonMove: {fileID: 690084214218586567}
+  sizeIncreasePerExp: 0.0001
   moveSpeedDecreasePerExp: 0.002
+  sizeIncreasePerTier: 0.2
   minMoveSpeed: 2
   rotateSpeedDecreasePerExp: 0.001
   minRotateSpeed: 1
   baseRotateSpeed: 90
+  thirdPersonMove: {fileID: 690084214218586567}
   _shieldCount: 0
---- !u!114 &6824705547684377968
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3283766534082059524}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 81e74ea90847bd8478ddccc9438a22bc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  guiOffset: {x: 20, y: 20}
-  elementSpacing: 20
-  healthBarHeight: 20
-  smoothTime: 0.3
---- !u!114 &767371878636735858
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3283766534082059524}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 83fee76bc6d201c488dd34dade8ea8f4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  survivalTime: 0
 --- !u!114 &239054795944909053
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -190,6 +170,7 @@ MonoBehaviour:
     fishTier: 0
     skillType: 0
   tierPrefabs: []
+  currentHalo: {fileID: 0}
   scalePlus: 0.8
   topOffset: 0.1
 --- !u!114 &4232815277183373033
@@ -202,6 +183,24 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 47d3fa0cbdbb0dd44b19da34c293f01b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  skillIconContainer: {fileID: 0}
+  skillIconPrefab: {fileID: 670011964737606152, guid: cc9d2db61ed2a134f88ac4c24db9668c, type: 3}
+  expMultiplierIcon: {fileID: 21300000, guid: 9c877096af79a6146a3be093fb9049f9, type: 3}
+  dashIcon: {fileID: 21300000, guid: 161ebb3e5858c2149a3fc73681744c2c, type: 3}
+  shieldIcon: {fileID: 21300000, guid: f88c78d1ff88e1e43915569541a356ed, type: 3}
+  healIcon: {fileID: 21300000, guid: b72ca5405b023c043a12a8c96d0aa1f8, type: 3}
+--- !u!114 &-6777016610383902195
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3283766534082059524}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 83fee76bc6d201c488dd34dade8ea8f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!1 &7226029142732899490
