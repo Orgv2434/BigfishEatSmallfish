@@ -91,7 +91,7 @@ namespace TripoForUnity
                 if (progress >= 0.98f)
                     progress = 1f;
 
-                UpdateProgressUI(Mathf.Clamp01(progress), $"下载中：{Mathf.RoundToInt(progress * 100)}%");
+                UpdateProgressUI(Mathf.Clamp01(progress), $"Downloading：{Mathf.RoundToInt(progress * 100)}%");
                 yield return null; 
             }
 
@@ -106,7 +106,7 @@ namespace TripoForUnity
                     File.WriteAllBytes(saveFilePath, webRequest.downloadHandler.data);
                     Debug.Log($"模型保存成功：{saveFilePath}");
 
-                    UpdateProgressUI(1f, "下载完成");
+                    UpdateProgressUI(1f, "Download complete！");
                     FishGameFlowManager.Instance.OnModelGenerated(saveFilePath);
                     downloadSuccess = true;
                 }
