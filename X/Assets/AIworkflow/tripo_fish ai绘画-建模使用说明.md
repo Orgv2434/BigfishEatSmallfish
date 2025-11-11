@@ -34,3 +34,16 @@
 
 `DrawModel.cs`
 
+#### 更改ai绘画sprite要求：
+
+| 项目                 | 必须设置为                       |
+| -------------------- | -------------------------------- |
+| Texture Type         | Sprite (2D and UI)               |
+| Sprite Mode          | Single                           |
+| Mesh Type            | Full Rect                        |
+| Read/Write Enabled   | ✅ 开启                           |
+| Compression          | RGBA32 / RGB24 / None / 可写格式 |
+| Mipmap               | ❌ 关闭                           |
+| Sprite Packing       | ❌ 关闭                           |
+| Texture size         | 可任意，但越大性能越差           |
+| SpriteRenderer scale | 推荐保持 1:1                     |
