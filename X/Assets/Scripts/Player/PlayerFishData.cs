@@ -303,6 +303,8 @@ public class PlayerFishData : MonoBehaviour
         // 音效
         MusicManager.Instance.Die();
         MusicManager.Instance.StopBGM();
+
+        // 结算界面显示
         FishGameFlowManager.Instance.tex_survivalTime.text = $"{Mathf.FloorToInt(survivalTime)} ";
         FishGameFlowManager.Instance.tex_finalLevel.text = $"{(int)currentTier+1} ";
         FishGameFlowManager.Instance.GetVerdictText(survivalTime, (int)currentTier);

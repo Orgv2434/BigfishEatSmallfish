@@ -34,7 +34,8 @@ public class FishGameFlowManager : MonoBehaviour
     public GameObject fishPrefab; // 已有的小鱼预制体（测试模式用）
     public Transform playerSpawnPoint;
     public GameObject playerFish;
-
+    [SerializeField] private string prefabPath = "Prefabs/Player";
+    
     [Header("材质和模型设置")]
     public Material playerMaterial; // 玩家材质
 
@@ -75,8 +76,11 @@ public class FishGameFlowManager : MonoBehaviour
     [Header("结算界面UI")]
     public GameObject gameOverUI;
     public Button btnRestart;  // 重新开始时创建新玩家
+
+    public Button btnReturnToMainMenu; // 返回主菜单按钮
     public GameObject SurVivalTimeUI,FinalLevelUI,VerdictUI;
-    [HideInInspector]public Text tex_survivalTime,tex_finalLevel,tex_verdict;
+    [HideInInspector] public Text tex_survivalTime, tex_finalLevel, tex_verdict;
+    
 
     [Header("设置面板UI")]
     public GameObject SettingsUI;
@@ -164,9 +168,11 @@ public class FishGameFlowManager : MonoBehaviour
             case GameState.GamePaused:
                 pauseUI.SetActive(false);
                 MusicManager.Instance.PlayBGM();
+                Time.timeScale = 1f;  
                 break;
             case GameState.GameOver:
                 gameOverUI.SetActive(false);
+                MusicManager.Instance.PlayBGM();
                 break;  // 游戏结束时不销毁玩家，留到重新开始时处理
         }
     }
@@ -203,7 +209,6 @@ public class FishGameFlowManager : MonoBehaviour
                 if (inGameUI != null)
                     inGameUI.SetActive(true);
                 else inGameUI = GameObject.Find("InGameUI");
-                Time.timeScale = 1f;
                 // 进入游戏时不自动创建玩家，仅在明确触发时创建
                 break;
             case GameState.GamePaused:
@@ -219,7 +224,6 @@ public class FishGameFlowManager : MonoBehaviour
                 break;
             case GameState.GameOver:
                 gameOverUI.SetActive(true);
-                Time.timeScale = 1f;
                 break;
         }
     }
@@ -269,6 +273,7 @@ public class FishGameFlowManager : MonoBehaviour
             CreateNewPlayerFish();  // 明确创建新玩家
             SwitchToState(GameState.GamePlaying);
         });
+        btnReturnToMainMenu.onClick.AddListener(() => SwitchToState(GameState.MainMenu));
     }
 
     private void OpenSettingsPanel()
@@ -564,12 +569,10 @@ public class FishGameFlowManager : MonoBehaviour
         if (fishPrefab == null)
         {
             Debug.LogError("请赋值小鱼预制体！");
-            return;
         }
         if(playerFish == null)
         {
-            Debug.LogError("请赋值玩家鱼预制体！");
-            return;
+           playerFish = Resources.Load<GameObject>(prefabPath);
         }
         playerFish = Instantiate(playerFish, playerSpawnPoint.position, Quaternion.identity);
       if(!isDebugMode)
@@ -605,6 +608,13 @@ public class FishGameFlowManager : MonoBehaviour
         if (CurrentState == GameState.GamePlaying)
         {
             SwitchToState(GameState.GameOver);
+            PageUIAppearEffect gameOverEffect = gameOverUI.GetComponent<PageUIAppearEffect>();
+                            
+            if (gameOverEffect != null)
+            {
+                gameOverEffect.Play();
+            }
+                
         }
     }
     #endregion
