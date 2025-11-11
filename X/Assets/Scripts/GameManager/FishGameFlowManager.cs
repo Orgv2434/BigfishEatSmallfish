@@ -437,13 +437,16 @@ private IEnumerator ProcessGeneratedModel()
         // 尝试从第一个有效Renderer获取贴图
         foreach (var renderer in allRenderers)
         {
-            if (renderer.material != null && renderer.material.mainTexture != null)
-            {
-                playerMaterial.mainTexture = renderer.material.mainTexture;
-                Debug.Log($"[ProcessGeneratedModel] 已从 {renderer.gameObject.name} 提取贴图并应用到playerMaterial");
-                textureApplied = true;
-                break;
-            }
+                if (renderer.material != null && renderer.material.mainTexture != null)
+                {
+                    Texture2D extractedTex = renderer.material.mainTexture as Texture2D;
+                    // 关键：用Shader的_Atlas属性名赋值，而非默认mainTexture
+                    playerMaterial.SetTexture("_Atlas", extractedTex);
+                    Debug.Log($"[ProcessGeneratedModel] 已提取贴图并赋值到_Atlas属性");
+                    textureApplied = true;
+                    break;
+                }
+
         }
 
         if (!textureApplied)

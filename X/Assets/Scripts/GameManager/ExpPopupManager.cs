@@ -73,8 +73,14 @@ public class ExpPopupManager : MonoBehaviour
     public void ShowCustomPopup(Vector3 playerWorldPosition, string textContent, Color textColor)
     {
         if (Instance == null || uiCanvas == null || popupPrefab == null || mainCamera == null)
-        {
-            Debug.LogError("ExpPopupManager 配置错误（缺少Canvas/相机/预制体）");
+        {   
+            if(mainCamera == null)
+            {
+                mainCamera = Camera.main;
+            }
+                
+            else
+            Debug.LogError("ExpPopupManager 配置错误（缺少Canvas/预制体）");
             return;
         }
 
