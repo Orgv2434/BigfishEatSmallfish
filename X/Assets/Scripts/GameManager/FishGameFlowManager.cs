@@ -199,19 +199,7 @@ public class FishGameFlowManager : MonoBehaviour
                 }
 
             case GameState.GamePlaying:
-                if (inGameUI != null)
-                {
-                    inGameUI.SetActive(true);
 
-                }
-                else
-                {
-                    inGameUI = GameObject.Find("InGameUI");
-                    Debug.LogError("没找到InGameUi!");
-                }
- 
-                
-                // 进入游戏时不自动创建玩家，仅在明确触发时创建
                 break;
             case GameState.GamePaused:
                 pauseUI.SetActive(true);
@@ -672,7 +660,7 @@ public class FishGameFlowManager : MonoBehaviour
         }
 
         btnEnterGame.onClick.AddListener(() =>
-        {
+        {   
             SwitchToState(GameState.GamePlaying);
         });
 
@@ -690,6 +678,16 @@ public class FishGameFlowManager : MonoBehaviour
     {
         playerSpawnPoint = GameObject.Find("PlayerSpawnPoint").transform;
         CreateNewPlayerFish();
+        if (inGameUI != null)
+        {
+            inGameUI.SetActive(true);
+        }
+        else
+        {
+            inGameUI = GameObject.Find("InGameUI");
+            Debug.LogError("没找到InGameUi!");
+        }
+ 
         // 设置UI
         if (PlayerFishGUIManager.Instance != null)
             PlayerFishGUIManager.Instance.SetPlayerFishData();
