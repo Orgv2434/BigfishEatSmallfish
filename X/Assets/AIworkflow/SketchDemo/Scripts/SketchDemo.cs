@@ -152,10 +152,10 @@ public class SketchDemo : MonoBehaviour
         //if (string.IsNullOrEmpty(promptInput.text))
         //    return;
         //把玩家的绘画（drawSprite.sprite.texture）转成 JPG → base64
-        byte[] bytes = drawSprite.sprite.texture.EncodeToJPG();
+        //byte[] bytes = drawSprite.sprite.texture.EncodeToJPG();
         //修正方向版：
-        //Texture2D fixedTex = Drawable.EnsureConsistentOrientation(drawSprite.sprite.texture);
-        //byte[] bytes = fixedTex.EncodeToJPG();
+        Texture2D fixedTex = Drawable.EnsureConsistentOrientation(drawSprite.sprite.texture);
+        byte[] bytes = fixedTex.EncodeToJPG();
 
         string base64String = Convert.ToBase64String(bytes);
         //保存草图
