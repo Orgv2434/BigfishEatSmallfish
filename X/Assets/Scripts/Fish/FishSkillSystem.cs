@@ -29,6 +29,9 @@ public class FishSkillSystem : MonoBehaviour
     public Sprite shieldIcon;
     public Sprite healIcon;
 
+    [Header("技能配置")]
+
+    public float healAmount = 50f;
     private List<SkillIconData> activeSkills = new List<SkillIconData>();
     private int maxSkillCount = 4;
 
@@ -57,33 +60,67 @@ public class FishSkillSystem : MonoBehaviour
         ActivateSkill(fish.skillType);
     }
 
-
-    // 新增：外部可调用，玩家死亡时清除所有技能图标
+    // 修改后的 ClearAllSkillIcons 方法（仅改遍历部分）
     public void ClearAllSkillIcons()
     {
-        if (activeSkills.Count == 0) return;
-
-        // 遍历所有技能图标，强制隐藏并停止计时
-        foreach (var skillData in activeSkills)
+        // 1. 处理列表中的技能图标：停止计时+隐藏动画+强制销毁
+        if (activeSkills.Count > 0)
         {
-            if (skillData == null) continue;
-
-            // 停止限时技能的计时协程（防止延迟隐藏）
-            if (skillData.expireCoroutine != null)
+            foreach (var skillData in activeSkills)
             {
-                StopCoroutine(skillData.expireCoroutine);
-                skillData.expireCoroutine = null;
-            }
+                if (skillData == null) continue;
 
-            // 立即隐藏图标（带消失动画）
-            HideSkillIcon(skillData);
+                if (skillData.expireCoroutine != null)
+                {
+                    StopCoroutine(skillData.expireCoroutine);
+                    skillData.expireCoroutine = null;
+                }
+
+                // 关键修改：传 forceDestroy = true，强制销毁图标
+                HideSkillIcon(skillData, forceDestroy: true);
+            }
+            activeSkills.Clear();
         }
 
-        // 清空技能列表（避免残留数据）
-        activeSkills.Clear();
-        Debug.Log("玩家死亡，已清除所有技能图标");
+        // 2. 销毁容器下所有子物体（兜底：确保漏网之鱼被销毁）
+        DestroyAllSkillContainerChildren();
+
+        Debug.Log("玩家死亡，已清除所有技能图标及容器子物体");
     }
 
+   // 优化后的 DestroyAllSkillContainerChildren 方法
+private void DestroyAllSkillContainerChildren()
+{
+    Transform container = skillIconContainer;
+    if (container == null)
+    {
+        GameObject containerObj = GameObject.Find("SkillIcons"); // 注意名称拼写
+        if (containerObj != null)
+        {
+            container = containerObj.transform;
+        }
+        else
+        {
+            Debug.LogWarning("未找到 SkillIcons 容器，无需销毁子物体");
+            return;
+        }
+    }
+
+    // 反向遍历：强制销毁所有子物体（不管是否激活）
+    for (int i = container.childCount - 1; i >= 0; i--)
+    {
+        Transform child = container.GetChild(i);
+        if (child == null) continue;
+
+        // 停止所有动画（包括隐藏动画）
+        DOTween.Kill(child.gameObject);
+        DOTween.Kill(child.GetComponent<Image>());
+        DOTween.Kill(child.GetComponent<RectTransform>());
+
+        // 强制销毁：不管是否隐藏、是否永久
+        Destroy(child.gameObject);
+    }
+}
 
     private void ActivateSkill(FishSkillType skill)
     {
@@ -112,7 +149,7 @@ public class FishSkillSystem : MonoBehaviour
                 break;
 
             case FishSkillType.Heal:
-                float healAmount = 50f;
+                 healAmount = 50f;
                 _playerData.GainHealth(healAmount);
                 ShowSkillIcon(skill, healIcon, isPermanent: false, duration: 5f);
                 Debug.Log($"获得加血效果！恢复{healAmount}点生命值");
@@ -147,7 +184,7 @@ public class FishSkillSystem : MonoBehaviour
         {
             if (skillIconContainer == null)
             {
-                skillIconContainer = GameObject.Find("Skilllcons").transform;
+                skillIconContainer = GameObject.Find("SkillIcons").transform;
             }
         
             iconObj = Instantiate(skillIconPrefab, skillIconContainer);
@@ -186,15 +223,29 @@ public class FishSkillSystem : MonoBehaviour
         }
     }
 
-    private void HideSkillIcon(SkillIconData iconData)
+    // 修改原有 HideSkillIcon 方法（增加 forceDestroy 参数）
+    private void HideSkillIcon(SkillIconData iconData, bool forceDestroy = false)
     {
-        if (iconData == null || !iconData.iconImage.gameObject.activeInHierarchy)
+        if (iconData == null || iconData.iconImage == null) return;
+
+        GameObject iconObj = iconData.iconImage.gameObject;
+        if (!iconObj.activeInHierarchy && !forceDestroy)
             return;
+
+        // 停止现有动画，避免异步冲突
+        DOTween.Kill(iconData.iconImage.rectTransform);
+        DOTween.Kill(iconData.iconImage);
 
         PlayHideAnimation(iconData, () =>
         {
-            iconData.iconImage.gameObject.SetActive(false);
+            iconObj.SetActive(false);
             iconData.iconImage.sprite = null;
+
+            // 清理时强制销毁所有图标（不管是否永久）
+            if (forceDestroy)
+            {
+                Destroy(iconObj); // 直接销毁，从场景中移除
+            }
 
             if (iconData.expireCoroutine != null)
             {

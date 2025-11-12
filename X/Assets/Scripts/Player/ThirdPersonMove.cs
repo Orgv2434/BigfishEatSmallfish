@@ -232,11 +232,16 @@ public class ThirdPersonMove : MonoBehaviour
         DushSlider.value = currentValue;
         _dushFillImage.color = targetColor;
     }
-   
-   public void ClearSliderUI()
+
+    public void ClearSliderUI()
     {
-        DushSlider.gameObject.SetActive(false);
+        // 先判断对象是否存在，再判断激活状态
+        if (DushSlider != null && DushSlider.gameObject.activeSelf)
+        {
+            DushSlider.gameObject.SetActive(false);
+        }
     }
+
     /// <summary>
     /// 计算移动方向（移动输入包含转向逻辑）
     /// </summary>

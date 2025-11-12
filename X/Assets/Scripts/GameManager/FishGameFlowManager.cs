@@ -1,16 +1,10 @@
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
-using UnityEngine.InputSystem;
-using UnityEngine.SceneManagement;
 using TripoForUnity;
-using System;
 using System.Collections;
-using UnityEngine.Networking;
+
 using System.IO;
-using GLTFast;
-using DistantLands;
-using Unity.VisualScripting;
+
 /// <summary>
 /// 3D大鱼吃小鱼 游戏流程总控制器（单例场景+AI画板版）
 /// </summary>
@@ -215,11 +209,7 @@ public class FishGameFlowManager : MonoBehaviour
                     inGameUI = GameObject.Find("InGameUI");
                     Debug.LogError("没找到InGameUi!");
                 }
-                // 设置UI
-                if (PlayerFishGUIManager.Instance != null)
-                    PlayerFishGUIManager.Instance.SetPlayerFishData();
-                else 
-                    Debug.LogError("PlayerFishGUIManager.Instance is null!");
+ 
                 
                 // 进入游戏时不自动创建玩家，仅在明确触发时创建
                 break;
@@ -277,7 +267,7 @@ public class FishGameFlowManager : MonoBehaviour
 
         // 暂停界面
         btnResume.onClick.AddListener(() => SwitchToState(GameState.GamePlaying));
-        btnReturnMenu.onClick.AddListener(() => SwitchToState(GameState.MainMenu));
+        btnReturnMenu.onClick.AddListener(GameToMainMenu);
 
         // 结算界面：重新开始时创建新玩家
         btnRestart.onClick.AddListener(() =>
@@ -287,7 +277,17 @@ public class FishGameFlowManager : MonoBehaviour
         });
         btnReturnToMainMenu.onClick.AddListener(() => SwitchToState(GameState.MainMenu));
     }
-
+    
+    private void GameToMainMenu()
+    {   
+        PlayerFishData playerFishData = playerFish.GetComponent<PlayerFishData>();
+        if (playerFishData != null)
+        {
+            playerFishData.DestroyPlayerFish();
+        }
+        else Debug.LogError("找不到PlayerFishdata!");
+    
+    }
     private void OpenSettingsPanel()
     {
         if (SettingsUI != null)
@@ -614,13 +614,19 @@ public class FishGameFlowManager : MonoBehaviour
         {
             Debug.LogError("场景中找不到ThirdPersonCamera组件！");
         }
+        
+        // 设置UI
+         if (PlayerFishGUIManager.Instance != null)
+                    PlayerFishGUIManager.Instance.SetPlayerFishData();
+         else 
+        Debug.LogError("PlayerFishGUIManager.Instance is null!");
 
     }
 
 
     public void TriggerGameOver()
     {
-        if (CurrentState == GameState.GamePlaying)
+        if (CurrentState == GameState.GamePlaying||CurrentState == GameState.GamePaused)
         {
             SwitchToState(GameState.GameOver);
             PageUIAppearEffect gameOverEffect = gameOverUI.GetComponent<PageUIAppearEffect>();
@@ -629,7 +635,7 @@ public class FishGameFlowManager : MonoBehaviour
             {
                 gameOverEffect.Play();
             }
-                
+            
         }
     }
     #endregion
@@ -684,6 +690,12 @@ public class FishGameFlowManager : MonoBehaviour
     {
         playerSpawnPoint = GameObject.Find("PlayerSpawnPoint").transform;
         CreateNewPlayerFish();
+        // 设置UI
+        if (PlayerFishGUIManager.Instance != null)
+            PlayerFishGUIManager.Instance.SetPlayerFishData();
+        else
+            Debug.LogError("PlayerFishGUIManager.Instance is null!");
+                    
     }
     
     #region 应用焦点处理
