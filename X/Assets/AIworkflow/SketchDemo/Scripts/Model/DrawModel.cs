@@ -234,7 +234,7 @@ public class DrawModel
         /// <summary>
         /// 控制权重，取值范围0~2，控制权重越大，对画面影响效果越明显，默认为1
         /// </summary>
-        public float weight = 0.5f;
+        public float weight = 0.6f;
 
         /// <summary>
         /// 控制开始时机，在绘制过程中，controlnet干预开始时机点，取值0~1,默认为0

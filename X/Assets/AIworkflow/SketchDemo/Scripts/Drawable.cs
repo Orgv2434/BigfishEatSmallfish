@@ -319,6 +319,26 @@ public class Drawable : MonoBehaviour
         return pixel_pos;
     }
 
+    // 统一修正贴图朝向（避免打包后镜像）
+    public static Texture2D EnsureConsistentOrientation(Texture2D source)
+    {
+        Texture2D tex = new Texture2D(source.width, source.height, source.format, false);
+        Color[] srcPixels = source.GetPixels();
+
+        // 检测并修复镜像（左右翻转）
+        for (int y = 0; y < source.height; y++)
+        {
+            for (int x = 0; x < source.width; x++)
+            {
+                tex.SetPixel(x, y, srcPixels[y * source.width + (source.width - 1 - x)]);
+            }
+        }
+
+        tex.Apply();
+        return tex;
+    }
+
+
     // Changes every pixel to be the reset colour
     public void ResetCanvas()
     {
